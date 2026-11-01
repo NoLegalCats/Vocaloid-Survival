@@ -1,0 +1,75 @@
+* {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #07080d;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    .pixel-font {
+      font-family: 'Press Start 2P', monospace;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.85)); }
+      50% { filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.95)); }
+    }
+    .glow-title {
+      animation: pulseGlow 2.4s infinite ease-in-out;
+    }
+    @keyframes toastSlide {
+      0% { transform: translateY(-18px) scale(0.92); opacity: 0; }
+      14% { transform: translateY(0) scale(1.02); opacity: 1; }
+      86% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-10px) scale(0.95); opacity: 0; }
+    }
+    .toast-anim {
+      animation: toastSlide 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes bottomBannerPop {
+      0% { transform: translateY(28px) scale(0.92); opacity: 0; }
+      12% { transform: translateY(0) scale(1.02); opacity: 1; }
+      88% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(16px) scale(0.96); opacity: 0; }
+    }
+    .bottom-upgrade-anim {
+      animation: bottomBannerPop 3.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes cutinPop {
+      0% { transform: translate(-155vw, 0) scale(0.92) skewX(-10deg); opacity: 0; }
+      15% { transform: translate(-48%, 0) scale(1.02) skewX(-2deg); opacity: 1; }
+      20% { transform: translate(-50%, 0) scale(1) skewX(0deg); opacity: 1; }
+      80% { transform: translate(-50%, 0) scale(1) skewX(0deg); opacity: 1; }
+      100% { transform: translate(60vw, 0) scale(0.92) skewX(10deg); opacity: 0; }
+    }
+    .cutin-banner-anim {
+      animation: cutinPop 3.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #38bdf8;
+      border-radius: 3px;
+    }
+    .ba-panel {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(12, 29, 54, 0.95) 60%, rgba(15, 23, 42, 0.98) 100%);
+      box-shadow: 0 20px 60px rgba(2, 132, 199, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+    .ba-skew-badge {
+      transform: skewX(-10deg);
+    }

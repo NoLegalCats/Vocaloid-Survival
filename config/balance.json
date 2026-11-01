@@ -1,0 +1,921 @@
+{
+  "_description": "Конфигурационный файл баланса игры Vocaloid Survival 3D: Bridge Over Water (3D Isometric Chibi Blue Archive × Minecraft Voxel Zombies Edition).",
+  "general": {
+    "pixelsPerMeter": 18,
+    "bossEveryMeters": 1000,
+    "playerBaseHp": 200,
+    "playerMaxHpGainPerLevelUp": 10,
+    "playerBaseSpeed": 210,
+    "playerBasePickupRadius": 90,
+    "xpBaseLevel1": 20,
+    "xpStepGrowthPerLevel": 0.05,
+    "waveTenMinuteRampScale": 0.75,
+    "baseMaxZombies": 80,
+    "maxZombiesCap": 420
+  },
+  "kilometerScaling": {
+    "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",
+    "zombieHpMultiplierPerBoss": 3.0,
+    "zombieSpeedBonusPerBoss": 0.15,
+    "zombieDamageBonusPerBoss": 0.15,
+    "playerXpMultiplierPerBoss": 5.0,
+    "freePlayerLevelsPerBoss": 1
+  },
+  "rarities": [
+    {
+      "id": "common",
+      "name": "ОБЫЧНАЯ",
+      "emoji": "⚪",
+      "weight": 48,
+      "neruWeight": 14,
+      "levelGain": 1,
+      "statsCount": 1,
+      "multiplier": 1
+    },
+    {
+      "id": "rare",
+      "name": "РЕДКАЯ",
+      "emoji": "🔵",
+      "weight": 30,
+      "neruWeight": 40,
+      "levelGain": 2,
+      "statsCount": 2,
+      "multiplier": 1
+    },
+    {
+      "id": "epic",
+      "name": "ЭПИЧЕСКАЯ",
+      "emoji": "🟣",
+      "weight": 15,
+      "neruWeight": 28,
+      "levelGain": 3,
+      "statsCount": 3,
+      "multiplier": 1
+    },
+    {
+      "id": "legendary",
+      "name": "ЛЕГЕНДАРНАЯ",
+      "emoji": "🟡",
+      "weight": 7,
+      "neruWeight": 18,
+      "levelGain": 6,
+      "statsCount": 3,
+      "multiplier": 2
+    }
+  ],
+  "characters": {
+    "teto": {
+      "id": "teto",
+      "name": "Касане Тето",
+      "shortName": "ТЕТО",
+      "code": "0401",
+      "speedMult": 1.0,
+      "magnetMult": 1.0,
+      "regenPerSec": 0,
+      "startRerolls": 5,
+      "rerollsPerBoss": 5,
+      "handheldWeaponDmgMult": 1.45,
+      "explosionDmgMult": 1.45,
+      "explosionAreaMult": 2.0,
+      "explosiveAbilitiesList": [
+        "plush_teto",
+        "c130_airstrike",
+        "meteor_rain",
+        "orbital_laser",
+        "mortar_barrage"
+      ]
+    },
+    "miku": {
+      "id": "miku",
+      "name": "Хацуне Мику",
+      "shortName": "МИКУ",
+      "code": "01",
+      "speedMult": 1.0,
+      "magnetMult": 1.0,
+      "regenPerSec": 1.0,
+      "xpMult": 1.0,
+      "bossXpFactor": 1.5,
+      "startRerolls": 10,
+      "rerollsPerBoss": 10,
+      "startsWithLegendaryMagnet": true,
+      "leekAndDrillDmgMult": 2.0
+    },
+    "neru": {
+      "id": "neru",
+      "name": "Акита Неро",
+      "shortName": "НЕРО",
+      "code": "DEN2",
+      "speedMult": 1.0,
+      "magnetMult": 1.0,
+      "regenPerSec": 0,
+      "cdMult": 0.5,
+      "startRerolls": 5,
+      "rerollsPerBoss": 5,
+      "abilityDmgMult": 1.5,
+      "railgunDmgMult": 1.5,
+      "highRarityBonusChance": 0.5,
+      "excludedDamageAbilities": [
+        "plush_teto",
+        "c130_airstrike",
+        "meteor_rain",
+        "triple_baka_overdrive",
+        "drill_tornado",
+        "cryo_blizzard",
+        "acid_juice",
+        "magnet_pulse"
+      ]
+    }
+  },
+  "weapons": {
+    "pistol": {
+      "name": "Пистолет M1911",
+      "icon": "🔫",
+      "imageFile": "images/pistol.jpg",
+      "dropChance": 1.0,
+      "baseCooldown": 0.38,
+      "baseDamage": 34,
+      "speed": 680,
+      "pierce": 1,
+      "spread": 0.07,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 0,
+      "mouseAim": false,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.3,
+        "areaRatePerPoint": 0.25,
+        "fireRateBonusPerPoint": 0.2,
+        "extraBulletsPerAreaPoint": 1,
+        "customStatLabels": [
+          "💥 Урон пули +30%",
+          "🔫 Мультишот (+1 пуля за ур.)",
+          "⚡ Скорострельность +20%"
+        ]
+      }
+    },
+    "leek_blaster": {
+      "name": "Вращающийся Лук-Порей Мику",
+      "icon": "🥬",
+      "imageFile": "images/leek_blaster.jpg",
+      "dropChance": 0.45,
+      "isOrbitWeapon": true,
+      "baseCooldown": 0.15,
+      "baseDamage": 120,
+      "speed": 0,
+      "pierce": 999,
+      "spread": 0,
+      "bulletsPerShot": 2,
+      "explosiveRadius": 0,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "extraLeeksPerAreaPoint": 1,
+        "sizeAndSpinSpeedRatePerCdPoint": 0.3,
+        "baseOrbitRadius": 56,
+        "baseBladeRadius": 22,
+        "baseSpinSpeed": 4.6,
+        "customStatLabels": [
+          "💥 Урон шинковки +32%",
+          "🥬 Кол-во луков (+1 на орбиту)",
+          "🌀 Размер спрайта и скорость +30%"
+        ]
+      }
+    },
+    "mp5": {
+      "name": "ПП MP5 «Шквал»",
+      "icon": "📠",
+      "imageFile": "images/mp5.jpg",
+      "dropChance": 0.85,
+      "baseCooldown": 0.11,
+      "baseDamage": 19,
+      "speed": 730,
+      "pierce": 2,
+      "spread": 0.14,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 0,
+      "mouseAim": true,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.28,
+        "areaRatePerPoint": 0.25,
+        "fireRateBonusPerPoint": 0.25,
+        "extraBulletsPerAreaPoint": 2,
+        "customStatLabels": [
+          "💥 Бронепробитие и урон +28%",
+          "📠 Длина очереди (+2 пули)",
+          "⚡ Темп стрельбы +25%"
+        ]
+      }
+    },
+    "ak47": {
+      "name": "Автомат АК-47",
+      "icon": "💥",
+      "imageFile": "images/ak47.jpg",
+      "dropChance": 0.65,
+      "baseCooldown": 0.18,
+      "baseDamage": 44,
+      "speed": 780,
+      "pierce": 4,
+      "spread": 0.09,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 0,
+      "mouseAim": false,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "areaRatePerPoint": 0.25,
+        "cdMultiplierPerPoint": 0.89,
+        "extraPiercePerAreaPoint": 2,
+        "knockbackBonusPerCdPoint": 0.25,
+        "customStatLabels": [
+          "💥 Тяжёлый урон 7.62 +32%",
+          "📐 Пробитие навылет (+цели)",
+          "🛑 Сила отбрасывания +25%"
+        ]
+      }
+    },
+    "dual_ar": {
+      "name": "Парные Автоматы Акимбо",
+      "icon": "⚔️",
+      "imageFile": "images/dual_ar.jpg",
+      "dropChance": 0.55,
+      "baseCooldown": 0.16,
+      "baseDamage": 28,
+      "speed": 710,
+      "pierce": 2,
+      "spread": 0.28,
+      "bulletsPerShot": 3,
+      "explosiveRadius": 0,
+      "mouseAim": false,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.28,
+        "areaRatePerPoint": 0.25,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон с двух рук +28%",
+          "⚔️ Ширина веера и стволы",
+          "⚡ Частота очередей +12%"
+        ]
+      }
+    },
+    "minigun": {
+      "name": "Шестиствольный Миниган",
+      "icon": "🔥",
+      "imageFile": "images/minigun.jpg",
+      "dropChance": 0.3,
+      "baseCooldown": 0.055,
+      "baseDamage": 18,
+      "speed": 820,
+      "pierce": 2,
+      "spread": 0.22,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 0,
+      "mouseAim": false,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.28,
+        "areaRatePerPoint": 0.25,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон пули +28%",
+          "🔥 Плотность потока (+стволы)",
+          "⚡ Разгон стволов (RPM) +12%"
+        ]
+      }
+    },
+    "dual_sniper": {
+      "name": "Парные Снайперки «Синий Луч»",
+      "icon": "💠",
+      "imageFile": "images/dual_sniper.jpg",
+      "dropChance": 0.4,
+      "baseCooldown": 0.58,
+      "baseDamage": 98,
+      "speed": 1200,
+      "pierce": 18,
+      "spread": 0.04,
+      "bulletsPerShot": 2,
+      "isBeamShot": true,
+      "explosiveRadius": 0,
+      "mouseAim": true,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.5,
+        "areaRatePerPoint": 0.5,
+        "pierceRatePerAreaPoint": 0.5,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон синего луча +50%",
+          "💠 Ширина трассера и пробитие +50%",
+          "⚡ Частота выстрелов +12%"
+        ]
+      }
+    },
+    "shotgun": {
+      "name": "Дробовик SPAS-12 «Дракон»",
+      "icon": "🧨",
+      "imageFile": "images/shotgun.jpg",
+      "dropChance": 0.75,
+      "baseCooldown": 0.62,
+      "baseDamage": 28,
+      "speed": 620,
+      "pierce": 3,
+      "spread": 0.45,
+      "bulletsPerShot": 7,
+      "explosiveRadius": 0,
+      "mouseAim": true,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.3,
+        "areaRatePerPoint": 0.25,
+        "extraPelletsPerAreaPoint": 2,
+        "knockbackBonusPerCdPoint": 0.25,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон картечи +30%",
+          "🧨 Кол-во дробин в веере (+2)",
+          "📐 Конус и отбрасывание +25%"
+        ]
+      }
+    },
+    "baguette_rpg": {
+      "name": "Багетная Базука РПГ-7",
+      "icon": "🥖",
+      "imageFile": "images/baguette_rpg.jpg",
+      "dropChance": 0.35,
+      "baseCooldown": 0.85,
+      "baseDamage": 95,
+      "speed": 540,
+      "pierce": 1,
+      "spread": 0.08,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 95,
+      "mouseAim": true,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.75,
+        "areaRatePerPoint": 0.28,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон в эпицентре +75%",
+          "🥖 Радиус фугасного взрыва +28%",
+          "🚀 Скорость и перезарядка +12%"
+        ]
+      }
+    },
+    "plasma_rail": {
+      "name": "Плазменный Рельсотрон «Дива»",
+      "icon": "⚡",
+      "imageFile": "images/plasma_rail.jpg",
+      "dropChance": 0.25,
+      "baseCooldown": 0.52,
+      "baseDamage": 74,
+      "speed": 860,
+      "pierce": 6,
+      "spread": 0.05,
+      "bulletsPerShot": 1,
+      "explosiveRadius": 64,
+      "mouseAim": true,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "areaRatePerPoint": 0.28,
+        "cdMultiplierPerPoint": 0.89,
+        "customStatLabels": [
+          "💥 Урон плазмы +32%",
+          "⚡ Радиус электро-дуги +28%",
+          "🔋 Цепные микро-взрывы +1"
+        ]
+      }
+    }
+  },
+  "abilities": {
+    "plush_teto": {
+      "name": "Питомец «Плюшевая Тето»",
+      "icon": "🧸",
+      "cardImageFile": "images/plush_teto.jpg",
+      "spriteNote": "Спрайт игрушки Плюшевой Тето (imgPlushTeto) встроен в index.html (base64)",
+      "dropChance": 0.4,
+      "baseCooldown": 2.2,
+      "baseDamage": 290,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "areaRatePerPoint": 0.5,
+        "speedRatePerCdPoint": 0.35,
+        "baseCrushHalfSide": 76,
+        "baseWalkSpeed": 155,
+        "plushCountPerLevel": 1,
+        "customStatLabels": [
+          "💥 Урон раздавливания +32%",
+          "🧸 Радиус прыжка и взрыва +50%",
+          "⚡ Скорость бега и прыжков +35%"
+        ]
+      }
+    },
+    "c130_airstrike": {
+      "name": "Ковровая Бомбардировка C-130",
+      "icon": "✈️",
+      "imageFile": "images/c130_airstrike.jpg",
+      "dropChance": 0.2,
+      "baseCooldown": 10.5,
+      "baseDamage": 750,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.35,
+        "areaRatePerPoint": 0.5,
+        "cdMultiplierPerPoint": 0.85,
+        "baseZoneHalfSide": 130,
+        "customStatLabels": [
+          "💥 Урон фугасных авиабомб +35%",
+          "📐 Площадь квадрата +50%",
+          "⚡ Снижение КД бомбардировки -15%"
+        ]
+      }
+    },
+    "drone_swarm": {
+      "name": "Орбитальный Рой Дронов",
+      "icon": "🛸",
+      "imageFile": "images/drone_swarm.jpg",
+      "dropChance": 0.45,
+      "isPermanentOrbit": true,
+      "baseCooldown": 0.25,
+      "baseDamage": 68,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.3,
+        "areaRatePerPoint": 0.28,
+        "fireRateBonusPerCdPoint": 0.2,
+        "baseFireInterval": 0.48,
+        "customStatLabels": [
+          "💥 Урон лазерного луча +30%",
+          "🛸 Кол-во дронов (+1 на орбиту)",
+          "⚡ Скорострельность лазеров +20%"
+        ]
+      }
+    },
+    "twin_mega_beam": {
+      "name": "Вращающийся Мега-Луч «Дива»",
+      "icon": "🌈",
+      "imageFile": "images/twin_mega_beam.jpg",
+      "dropChance": 0.25,
+      "baseCooldown": 9.5,
+      "baseDamage": 540,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.35,
+        "cdMultiplierPerAreaPoint": 0.85,
+        "degreesPerStep": 90,
+        "customStatLabels": [
+          "💥 Урон в секунду (DPS) +35%",
+          "⚡ Снижение КД мега-луча -15%",
+          "🔄 Сектор вращения (+90° к обороту)"
+        ]
+      }
+    },
+    "road_roller": {
+      "name": "Дорожный Каток «Неро»",
+      "icon": "🚜",
+      "imageFile": "images/road_roller.jpg",
+      "dropChance": 0.7,
+      "baseCooldown": 9.0,
+      "baseDamage": 185,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.3,
+        "areaRatePerPoint": 0.25,
+        "cdMultiplierPerPoint": 0.8,
+        "baseHalfWidth": 62,
+        "rollerSpeed": 640,
+        "customStatLabels": [
+          "🛑 Сила расталкивания и урон +30%",
+          "🚜 Ширина катка (до всей карты) +25%",
+          "⚡ Снижение КД катка -20%"
+        ]
+      }
+    },
+    "meteor_rain": {
+      "name": "Метеоритный Апокалипсис",
+      "icon": "☄️",
+      "imageFile": "images/meteor_rain.jpg",
+      "dropChance": 0.35,
+      "baseCooldown": 9.5,
+      "baseDamage": 640,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.35,
+        "areaRatePerPoint": 0.5,
+        "baseMeteors": 5,
+        "extraMeteorsPerCdPoint": 1,
+        "baseCraterHalfSide": 68,
+        "customStatLabels": [
+          "💥 Урон падения и ожога +35%",
+          "☄️ Радиус кратера +50%",
+          "🔥 Кол-во метеоров в шторме (+1)"
+        ]
+      }
+    },
+    "triple_baka_overdrive": {
+      "name": "Призыв «Трипл Бака»",
+      "icon": "👑",
+      "imageFile": "images/triple_baka_overdrive.jpg",
+      "dropChance": 0.25,
+      "baseCooldown": 12.0,
+      "baseDamage": 350,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "baseDuration": 5.5,
+        "durationPerAreaPoint": 1.4,
+        "cdMultiplierPerPoint": 0.86,
+        "customStatLabels": [
+          "💥 Огневая мощь союзниц +32%",
+          "⏱️ Длительность боя втроём +1.4с",
+          "⚡ Снижение КД призыва -14%"
+        ]
+      }
+    },
+    "flash_panic": {
+      "name": "Светошумовая Сверхновая «Паника»",
+      "icon": "💥",
+      "imageFile": "images/flash_panic.jpg",
+      "dropChance": 0.9,
+      "baseCooldown": 8.5,
+      "baseDamage": 260,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.3,
+        "areaRatePerPoint": 0.4,
+        "baseStunDuration": 3.2,
+        "stunPerCdPoint": 0.6,
+        "cdMultiplierPerPoint": 0.85,
+        "customStatLabels": [
+          "💥 Урон шоковой волны +30%",
+          "📐 Радиус ослепления экрана +40%",
+          "💫 Оглушение +0.6с и КД -15%"
+        ]
+      }
+    },
+    "neru_phone": {
+      "name": "Грозовой Спам Телефона Неро",
+      "icon": "📱",
+      "imageFile": "images/neru_phone.jpg",
+      "dropChance": 0.6,
+      "baseCooldown": 6.2,
+      "baseDamage": 400,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "baseJumps": 3,
+        "extraJumpsPerAreaPoint": 3,
+        "rangeRatePerCdPoint": 0.3,
+        "cdMultiplierPerPoint": 0.75,
+        "customStatLabels": [
+          "💥 Урон электро-разряда +32%",
+          "📱 Кол-во перескоков цепи (+3)",
+          "⚡ Дальность дуги +30% и КД -25%"
+        ]
+      }
+    },
+    "drill_tornado": {
+      "name": "Гигантские Буры «Касане Торнадо»",
+      "icon": "🌀",
+      "imageFile": "images/drill_tornado.jpg",
+      "dropChance": 0.35,
+      "baseCooldown": 7.2,
+      "baseDamage": 1200,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "areaRatePerPoint": 0.5,
+        "knockbackRatePerCdPoint": 0.25,
+        "cdMultiplierPerPoint": 0.85,
+        "customStatLabels": [
+          "💥 Урон перемалывания +32%",
+          "🌀 Размер волос-буров Тето +50%",
+          "🌪️ Отброс +25% и КД -15%"
+        ]
+      }
+    },
+    "bass_shockwave": {
+      "name": "Сверхзвуковой Бас-Дроп 01",
+      "icon": "🔊",
+      "imageFile": "images/bass_shockwave.jpg",
+      "dropChance": 0.85,
+      "baseCooldown": 7.8,
+      "baseDamage": 280,
+      "upgradeScaling": {
+        "cdMultiplierPerDmgPoint": 0.8,
+        "areaRatePerPoint": 0.5,
+        "knockbackRatePerCdPoint": 0.5,
+        "baseRadius": 420,
+        "stunDuration": 0.5,
+        "customStatLabels": [
+          "⚡ Снижение КД бас-дропа -20%",
+          "🔊 Радиус звукового фронта +50%",
+          "🌊 Сила отбрасывания назад +50%"
+        ]
+      }
+    },
+    "cryo_blizzard": {
+      "name": "Ледниковый Шторм «Снежная Мику»",
+      "icon": "❄️",
+      "imageFile": "images/cryo_blizzard.jpg",
+      "dropChance": 0.65,
+      "baseCooldown": 9.0,
+      "baseDamage": 270,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.5,
+        "areaRatePerPoint": 0.5,
+        "baseChillDuration": 5.0,
+        "chillPerCdPoint": 1.0,
+        "customStatLabels": [
+          "💥 Крио-урон раскалывания +50%",
+          "❄️ Размер квадрата заморозки +50%",
+          "🧊 Длительность обморожения +1.0с"
+        ]
+      }
+    },
+    "orbital_laser": {
+      "name": "Спутниковый Залп «УТАУ»",
+      "icon": "🛰️",
+      "imageFile": "images/orbital_laser.jpg",
+      "dropChance": 0.3,
+      "baseCooldown": 8.8,
+      "baseDamage": 490,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.5,
+        "lengthRatePerAreaPoint": 0.45,
+        "baseDuration": 4.0,
+        "durationPerAreaPoint": 3.0,
+        "extraPillarsPerCdPoint": 1,
+        "cdMultiplierPerPoint": 0.9,
+        "customStatLabels": [
+          "💥 Фокусированный урон +50%",
+          "📐 Вертикальная длина +45% и жизнь +3.0с",
+          "☄️ +1 колонна плазмы и КД -10%"
+        ]
+      }
+    },
+    "napalm_ring": {
+      "name": "Термитное Кольцо Ада",
+      "icon": "🔥",
+      "imageFile": "images/napalm_ring.jpg",
+      "dropChance": 0.6,
+      "baseCooldown": 7.5,
+      "baseDamage": 350,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 1.0,
+        "areaRatePerPoint": 0.5,
+        "baseBurnDuration": 2.5,
+        "burnDurationPerCdPoint": 2.0,
+        "customStatLabels": [
+          "💥 Урон горения (DoT) +100%",
+          "🔥 Радиус кольца пламени +50%",
+          "⏳ Длительность горения +2.0с"
+        ]
+      }
+    },
+    "mortar_barrage": {
+      "name": "Багетная РСЗО «Катюша»",
+      "icon": "🚀",
+      "imageFile": "images/mortar_barrage.jpg",
+      "dropChance": 0.5,
+      "baseCooldown": 8.2,
+      "baseDamage": 500,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.32,
+        "areaRatePerPoint": 0.5,
+        "baseShells": 5,
+        "extraShellsPerCdPoint": 2,
+        "customStatLabels": [
+          "💥 Урон прямого попадания +32%",
+          "🚀 Радиус подрыва багета +50%",
+          "💣 Кол-во ракет в залпе (+2)"
+        ]
+      }
+    },
+    "black_hole": {
+      "name": "Гравитационная Сингулярность",
+      "icon": "🕳️",
+      "imageFile": "images/black_hole.jpg",
+      "dropChance": 0.3,
+      "baseCooldown": 30.0,
+      "baseDamage": 2500,
+      "upgradeScaling": {
+        "dmgRatePerPoint": 0.35,
+        "areaRatePerPoint": 0.28,
+        "cdMultiplierPerPoint": 0.9,
+        "baseRadius": 660,
+        "duration": 2.6,
+        "customStatLabels": [
+          "💥 Урон сверхновой при взрыве +35%",
+          "🕳️ Радиус захвата улицы +28%",
+          "⚡ Снижение КД сингулярности -10%"
+        ]
+      }
+    },
+    "acid_juice": {
+      "name": "Море Овощного Сока «ПоПиПо»",
+      "icon": "🧪",
+      "imageFile": "images/acid_juice.jpg",
+      "dropChance": 0.5,
+      "baseCooldown": 7.0,
+      "baseDamage": 0,
+      "upgradeScaling": {
+        "baseHealPerSec": 10,
+        "healPerDmgPoint": 5,
+        "baseDuration": 5.0,
+        "durationPerAreaPoint": 2.0,
+        "cdMultiplierPerAreaPoint": 0.85,
+        "extraPoolsPerCdPoint": 1,
+        "radiusRatePerCdPoint": 0.35,
+        "customStatLabels": [
+          "💚 Лечение в зоне +5 HP/с",
+          "⏱️ Длительность +2с и КД -15%",
+          "🟢 +1 лужа и радиус зоны +35%"
+        ]
+      }
+    },
+    "holo_shield": {
+      "name": "Импульсный Купол «Дива-Щит»",
+      "icon": "🛡️",
+      "imageFile": "images/holo_shield.jpg",
+      "dropChance": 0.5,
+      "baseCooldown": 9.8,
+      "baseDamage": 0,
+      "upgradeScaling": {
+        "cdMultiplierPerDmgPoint": 0.7,
+        "areaRatePerPoint": 0.5,
+        "baseDuration": 4.0,
+        "durationPerCdPoint": 1.0,
+        "customStatLabels": [
+          "⚡ Снижение КД купола -30%",
+          "🛡️ Радиус отталкивающей волны +50%",
+          "⏱️ Длительность купола +1.0с"
+        ]
+      }
+    },
+    "magnet_pulse": {
+      "name": "Квантовый Пылесос (Магнит)",
+      "icon": "🧲",
+      "imageFile": "images/magnet_pulse.jpg",
+      "dropChance": 0.7,
+      "baseCooldown": 8.0,
+      "baseDamage": 0,
+      "upgradeScaling": {
+        "xpBonusPerLevel": 1.0,
+        "areaRatePerPoint": 0.5,
+        "cdMultiplierPerPoint": 0.7,
+        "customStatLabels": [
+          "📈 Множитель опыта +100% за ур.",
+          "🧲 Высота зоны притяжения +50%",
+          "⚡ Снижение КД импульса -30%"
+        ]
+      }
+    },
+    "chibi_turret": {
+      "name": "Бункер «Авто-Синт» (Турели)",
+      "icon": "🤖",
+      "imageFile": "images/chibi_turret.jpg",
+      "dropChance": 0.55,
+      "baseCooldown": 7.2,
+      "baseDamage": 300,
+      "upgradeScaling": {
+        "dmgAndFireRatePerPoint": 1.0,
+        "extraTurretsPerAreaPoint": 2,
+        "cdMultiplierPerPoint": 0.7,
+        "baseDuration": 7.5,
+        "durationPerCdPoint": 3.0,
+        "customStatLabels": [
+          "💥 Калибр и скорострельность +100%",
+          "🤖 Кол-во турелей за спавн (+2)",
+          "⚡ КД -30% и +3с жизни турели"
+        ]
+      }
+    }
+  },
+  "zombies": {
+    "walker": {
+      "baseHp": 42,
+      "tenMinHpAdd": 130,
+      "baseSpeed": 58,
+      "size": 15,
+      "contactDmg": 12,
+      "xpDrops": 2,
+      "xpPerDrop": 1
+    },
+    "sprinter": {
+      "hpMult": 0.85,
+      "speedMult": 1.5,
+      "size": 13,
+      "contactDmg": 14,
+      "xpDrops": 3,
+      "xpPerDrop": 1
+    },
+    "riot": {
+      "hpMult": 2.2,
+      "speedMult": 0.82,
+      "armorReduction": 0.4,
+      "size": 18,
+      "contactDmg": 16,
+      "xpDrops": 4,
+      "xpPerDrop": 3,
+      "spawnAfterSec": 20
+    },
+    "spitter": {
+      "hpMult": 1.15,
+      "speedMult": 0.9,
+      "size": 15,
+      "contactDmg": 12,
+      "projectileDamage": 12,
+      "acidPoolDamagePerSec": 18,
+      "xpDrops": 5,
+      "xpPerDrop": 1,
+      "spawnAfterSec": 35
+    },
+    "bomber": {
+      "hpMult": 1.1,
+      "speedMult": 1.25,
+      "size": 16,
+      "contactDmg": 24,
+      "explosionHalfSide": 75,
+      "xpDrops": 3,
+      "xpPerDrop": 2,
+      "spawnAfterSec": 50
+    },
+    "necromancer": {
+      "hpMult": 1.75,
+      "speedMult": 0.78,
+      "size": 17,
+      "contactDmg": 15,
+      "buffSpeedMult": 1.35,
+      "xpDrops": 3,
+      "xpPerDrop": 3,
+      "spawnAfterSec": 70
+    },
+    "tank": {
+      "hpMult": 4.0,
+      "speedMult": 0.72,
+      "size": 25,
+      "contactDmg": 22,
+      "xpDrops": 5,
+      "xpPerDrop": 4,
+      "spawnAfterSec": 60
+    }
+  },
+  "bosses": {
+    "scaling": {
+      "baseHp": 9000,
+      "linearKmFactor": 2.2,
+      "exponentialKmBase": 1.48,
+      "speedBonusPerKm": 0.14,
+      "contactDamageBase": 80,
+      "contactDamagePerKm": 40,
+      "projectileDamageBonusPerKm": 0.38,
+      "baseAttackInterval": 2.15,
+      "attackIntervalDecayPerKm": 0.8,
+      "minAttackInterval": 0.58,
+      "extraProjectilesPerKm": 3,
+      "armorPerKmAfterFirst": 0.09,
+      "maxArmor": 0.52,
+      "enrageHpThreshold": 0.45,
+      "enrageSpeedMult": 1.32,
+      "enrageCooldownMult": 0.65,
+      "alwaysLockBottomFromKm": 2,
+      "arenaMinHeightPx": 500
+    },
+    "varieties": [
+      {
+        "archetype": "titan",
+        "title": "КОРОЛЬ ПЕРЕКРЁСТКА: ЗОМБИ-ТИТАН",
+        "speed": 76,
+        "size": 58,
+        "hpMultiplier": 1.0,
+        "armorBonus": 0.0,
+        "locksBottomImmediately": false,
+        "canLockBottomOnSpecial": true
+      },
+      {
+        "archetype": "cyber_riot",
+        "title": "КИБЕР-ГОЛИАФ ОМОН-X (БРОНЕ-БОСС)",
+        "speed": 72,
+        "size": 62,
+        "hpMultiplier": 1.25,
+        "armorBonus": 0.15,
+        "locksBottomImmediately": true,
+        "canLockBottomOnSpecial": true
+      },
+      {
+        "archetype": "plague_spitter",
+        "title": "ТОКСИЧНЫЙ АРХИВАРИУС ЧУМЫ",
+        "speed": 75,
+        "size": 56,
+        "hpMultiplier": 1.15,
+        "armorBonus": 0.05,
+        "locksBottomImmediately": false,
+        "canLockBottomOnSpecial": true
+      },
+      {
+        "archetype": "pyro_bomber",
+        "title": "БЕЗУМНЫЙ ПОДРЫВНИК-ДЖАГГЕРНАУТ",
+        "speed": 86,
+        "size": 60,
+        "hpMultiplier": 1.2,
+        "armorBonus": 0.08,
+        "locksBottomImmediately": true,
+        "canLockBottomOnSpecial": true
+      },
+      {
+        "archetype": "necro_lord",
+        "title": "ВЕРХОВНЫЙ НЕКРО-ДИРИЖЁР НОЧИ",
+        "speed": 80,
+        "size": 58,
+        "hpMultiplier": 1.3,
+        "armorBonus": 0.12,
+        "locksBottomImmediately": true,
+        "canLockBottomOnSpecial": true
+      }
+    ]
+  }
+}
