@@ -53,12 +53,17 @@
       state.player.invulnTimer = 0;
       state.player.shieldTimer = 0;
       state.player.overdriveTimer = 0;
+      state.banishedItems = new Set();
+      state.lastWarnedBossMeters = 0;
       state.player.dashCdTimer = 0;
-      state.player.dashMaxCd = 1.0;
+      state.player.dashMaxCd = 10.0;
       state.player.dashActiveTimer = 0;
       state.player.lastMoveDirX = 0;
       state.player.lastMoveDirY = -1;
       state.cameraY = state.player.y - gameCanvas.height * 0.65;
+      // Зона ограничения на старте спавнится ровно внизу стартового экрана!
+      state.startBottomLimitY = Math.round(gameCanvas.height * 0.35) - 34;
+      if (typeof populateArsenalCatalog === 'function') populateArsenalCatalog();
 
       const badge = document.getElementById('hudSkinBadge');
       badge.textContent = skin.shortName;
@@ -179,19 +184,25 @@
     function populateArsenalCatalog() {
       const wGrid = document.getElementById('catalogWeaponsGrid');
       const aGrid = document.getElementById('catalogAbilitiesGrid');
+      if (!wGrid || !aGrid) return;
       wGrid.innerHTML = '';
       aGrid.innerHTML = '';
+      const banished = (typeof state !== 'undefined' && state.banishedItems) ? state.banishedItems : new Set();
 
       WEAPONS_POOL.forEach((w, idx) => {
+        const isBanished = banished.has(w.id);
         const freqMeta = getItemDropFrequencyMeta(w.id);
         const div = document.createElement('div');
-        div.className = 'p-3 rounded-xl bg-slate-950 border border-amber-500/40 flex flex-col justify-between gap-1 overflow-hidden min-w-0';
+        div.className = isBanished
+          ? 'p-3 rounded-xl bg-slate-950 border-2 border-red-600/80 opacity-65 flex flex-col justify-between gap-1 overflow-hidden min-w-0'
+          : 'p-3 rounded-xl bg-slate-950 border border-amber-500/40 flex flex-col justify-between gap-1 overflow-hidden min-w-0';
         div.innerHTML = `
-          <div class="relative w-full h-24 rounded-lg overflow-hidden border border-amber-500/40 mb-1 bg-slate-900">
+          <div class="relative w-full h-24 rounded-lg overflow-hidden border ${isBanished ? 'border-red-600 grayscale' : 'border-amber-500/40'} mb-1 bg-slate-900">
             <img src="${(document.getElementById('imgArt_' + w.id) || {}).src || ''}" alt="${w.name}" class="w-full h-full object-cover" />
+            ${isBanished ? `<div class="absolute inset-0 bg-red-950/80 flex items-center justify-center"><span class="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] uppercase">🚫 ЗАБЛОКИРОВАНО</span></div>` : ''}
           </div>
           <div class="flex items-center justify-between gap-1 flex-wrap">
-            <span class="text-xs font-black text-amber-300 break-words">#${idx + 1}. ${w.icon} ${w.name}</span>
+            <span class="text-xs font-black ${isBanished ? 'text-red-300 line-through' : 'text-amber-300'} break-words">#${idx + 1}. ${w.icon} ${w.name}</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded border font-bold ${freqMeta.cls}">🎲 ${freqMeta.label}</span>
           </div>
           <p class="text-[11px] text-slate-300 leading-snug">${w.desc}</p>
@@ -206,15 +217,19 @@
       });
 
       ABILITIES_POOL.forEach((a, idx) => {
+        const isBanished = banished.has(a.id);
         const freqMeta = getItemDropFrequencyMeta(a.id);
         const div = document.createElement('div');
-        div.className = 'p-3 rounded-xl bg-slate-950 border border-cyan-500/40 flex flex-col justify-between gap-1 overflow-hidden min-w-0';
+        div.className = isBanished
+          ? 'p-3 rounded-xl bg-slate-950 border-2 border-red-600/80 opacity-65 flex flex-col justify-between gap-1 overflow-hidden min-w-0'
+          : 'p-3 rounded-xl bg-slate-950 border border-cyan-500/40 flex flex-col justify-between gap-1 overflow-hidden min-w-0';
         div.innerHTML = `
-          <div class="relative w-full h-24 rounded-lg overflow-hidden border border-cyan-500/40 mb-1 bg-slate-900">
+          <div class="relative w-full h-24 rounded-lg overflow-hidden border ${isBanished ? 'border-red-600 grayscale' : 'border-cyan-500/40'} mb-1 bg-slate-900">
             <img src="${(document.getElementById('imgArt_' + a.id) || {}).src || ''}" alt="${a.name}" class="w-full h-full object-cover" />
+            ${isBanished ? `<div class="absolute inset-0 bg-red-950/80 flex items-center justify-center"><span class="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] uppercase">🚫 ЗАБЛОКИРОВАНО</span></div>` : ''}
           </div>
           <div class="flex items-center justify-between gap-1 flex-wrap">
-            <span class="text-xs font-black text-cyan-300 break-words">#${idx + 1}. ${a.icon} ${a.name}</span>
+            <span class="text-xs font-black ${isBanished ? 'text-red-300 line-through' : 'text-cyan-300'} break-words">#${idx + 1}. ${a.icon} ${a.name}</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded border font-bold ${freqMeta.cls}">🎲 ${freqMeta.label}</span>
           </div>
           <p class="text-[11px] text-slate-300 leading-snug">${a.desc}</p>
@@ -305,11 +320,21 @@
 
       window.addEventListener('keydown', e => {
         keys[e.code] = true;
-        if (e.key === 'Shift') keys['Shift'] = true;
+        // Shift нельзя зажимать — работает только на одиночное нажатие (!e.repeat)!
+        if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key === 'Shift') && !e.repeat) {
+          if (!keys['_shiftHeldLock']) {
+            keys['_shiftHeldLock'] = true;
+            if (state.running && !state.paused) {
+              state.triggerDashRequested = true;
+            }
+          }
+        }
       });
       window.addEventListener('keyup', e => {
         keys[e.code] = false;
-        if (e.key === 'Shift') keys['Shift'] = false;
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key === 'Shift') {
+          keys['_shiftHeldLock'] = false;
+        }
       });
 
       const dashWidget = document.getElementById('dashCircleWidget');
@@ -401,6 +426,57 @@
       });
 
       const btnRerollChoices = document.getElementById('btnRerollChoices');
+      if (btnRerollChoices && !document.getElementById('btnOpenBanishModal')) {
+        const parentWrap = document.createElement('div');
+        parentWrap.className = 'flex items-center gap-2.5 flex-wrap justify-center sm:justify-end';
+        btnRerollChoices.parentNode.insertBefore(parentWrap, btnRerollChoices);
+        const banishBtn = document.createElement('button');
+        banishBtn.id = 'btnOpenBanishModal';
+        banishBtn.type = 'button';
+        banishBtn.className = 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-black text-xs sm:text-sm shadow-lg border border-rose-400/70 flex items-center gap-2 flex-shrink-0 transition transform active:scale-95';
+        banishBtn.innerHTML = '<span>🚫 Блокировка</span><span id="banishPoolCountBadge" class="px-2 py-0.5 rounded-full bg-slate-950/90 text-rose-200 font-mono text-xs">Пул: 30</span>';
+        parentWrap.appendChild(banishBtn);
+        parentWrap.appendChild(btnRerollChoices);
+      }
+
+      if (!document.getElementById('banishItemModal')) {
+        const bModal = document.createElement('div');
+        bModal.id = 'banishItemModal';
+        bModal.className = 'hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6';
+        bModal.innerHTML = `
+          <div class="w-full max-w-6xl max-h-[90vh] bg-slate-900 border-2 border-rose-500 rounded-3xl shadow-[0_0_50px_rgba(244,63,94,0.35)] flex flex-col overflow-hidden">
+            <div class="px-5 py-4 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-black uppercase tracking-widest text-rose-400">🚫 ИСКЛЮЧЕНИЕ ИЗ ПУЛА НА ТЕКУЩИЙ ЗАБЕГ</div>
+                <h3 class="text-lg sm:text-2xl font-black text-white">Заблокировать 1 предмет вместо прокачки уровня</h3>
+                <p id="banishModalPoolCounter" class="text-xs text-slate-300 mt-0.5">Осталось в пуле: 30 / 30 (блокировка доступна до 5 предм.)</p>
+              </div>
+              <button id="btnCloseBanishModal" type="button" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-600 transition flex-shrink-0">
+                ⬅️ Назад к выбору прокачки
+              </button>
+            </div>
+            <div class="p-4 sm:p-5 overflow-y-auto flex-1">
+              <div id="banishItemsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(bModal);
+      }
+
+      const btnOpenBanishModal = document.getElementById('btnOpenBanishModal');
+      if (btnOpenBanishModal) {
+        btnOpenBanishModal.addEventListener('click', () => {
+          openBanishItemModal();
+        });
+      }
+      const btnCloseBanishModal = document.getElementById('btnCloseBanishModal');
+      if (btnCloseBanishModal) {
+        btnCloseBanishModal.addEventListener('click', () => {
+          const bModal = document.getElementById('banishItemModal');
+          if (bModal) bModal.classList.add('hidden');
+        });
+      }
+
       if (btnRerollChoices) {
         btnRerollChoices.addEventListener('click', () => {
           if (state.rerolls <= 0) return;

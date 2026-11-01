@@ -12,13 +12,19 @@
     "waveTenMinuteRampScale": 0.75,
     "baseMaxZombies": 80,
     "maxZombiesCap": 420,
-    "dashBaseCooldownSec": 1.0,
+    "dashBaseCooldownSec": 10.0,
     "dashBaseInvulnSec": 0.5,
     "dashBaseDistancePx": 155,
-    "perLevelMoveSpeedBonus": 0.05,
+    "perLevelMoveSpeedBonus": 0.025,
     "perLevelDashLengthBonus": 0.1,
     "perLevelDashCdReduction": 0.1,
-    "perLevelDashInvulnBonus": 0.1
+    "perLevelDashInvulnBonus": 0.1,
+    "dashMinCooldownSec": 0.3,
+    "dashCooldownReductionPerLevelSec": 0.1,
+    "dashBaseDurationSec": 0.2,
+    "dashMaxDurationSec": 2.0,
+    "dashDurationBonusPerLevelSec": 0.05,
+    "minUnbanishedPoolSize": 5
   },
   "kilometerScaling": {
     "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",
@@ -871,7 +877,9 @@
       "enrageSpeedMult": 1.32,
       "enrageCooldownMult": 0.65,
       "alwaysLockBottomFromKm": 999999,
-      "arenaMinHeightPx": 500
+      "arenaMinHeightPx": 500,
+      "maxMissingHpBonusMult": 3.0,
+      "warningDistanceMeters": 100
     },
     "varieties": [
       {

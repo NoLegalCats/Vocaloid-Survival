@@ -206,7 +206,7 @@
           </div>
         </div>
         <div id="bottomStatsSubtext" class="text-[9px] sm:text-[10px] font-bold text-cyan-200/90 tracking-tight truncate max-w-[320px]">
-          УР.1: Скор. +0% • Деш +0% • Неуязв. 0.50с • КД 1.00с
+          УР.1: Скор. +0% • Рывок/Неуязв. 0.20с • КД деша 10.0с
         </div>
       </div>
 
@@ -366,12 +366,39 @@
           <h3 class="text-xl sm:text-2xl lg:text-3xl font-black text-white mt-0.5">Выбери оружие или способность (с выпавшей редкостью!)</h3>
           <p class="text-xs sm:text-sm text-slate-400">Максимальное здоровье увеличено на +15 HP • Все бонусы накладываются в конце</p>
         </div>
-        <button id="btnRerollChoices" type="button" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm lg:text-base shadow-lg border border-indigo-400/60 flex items-center gap-2.5 flex-shrink-0 transition transform active:scale-95">
-          <span>🎲 Перебросить пул</span>
-          <span id="rerollCountModalBadge" class="px-2.5 py-0.5 rounded-full bg-slate-950/90 text-amber-300 font-mono text-xs sm:text-sm">5</span>
-        </button>
+        <div class="flex items-center gap-2.5 flex-wrap justify-center sm:justify-end">
+          <button id="btnOpenBanishModal" type="button" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-black text-xs sm:text-sm shadow-lg border border-rose-400/70 flex items-center gap-2 flex-shrink-0 transition transform active:scale-95">
+            <span>🚫 Блокировка</span>
+            <span id="banishPoolCountBadge" class="px-2 py-0.5 rounded-full bg-slate-950/90 text-rose-200 font-mono text-xs">Пул: 30</span>
+          </button>
+          <button id="btnRerollChoices" type="button" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm lg:text-base shadow-lg border border-indigo-400/60 flex items-center gap-2.5 flex-shrink-0 transition transform active:scale-95">
+            <span>🎲 Перебросить пул</span>
+            <span id="rerollCountModalBadge" class="px-2.5 py-0.5 rounded-full bg-slate-950/90 text-amber-300 font-mono text-xs sm:text-sm">5</span>
+          </button>
+        </div>
       </div>
       <div id="choiceCardsList" class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch"></div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- BANISH / BLOCK ITEM MODAL (Block 1 item instead of upgrading!)        -->
+  <!-- ===================================================================== -->
+  <div id="banishItemModal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+    <div class="w-full max-w-6xl max-h-[90vh] bg-slate-900 border-2 border-rose-500 rounded-3xl shadow-[0_0_50px_rgba(244,63,94,0.35)] flex flex-col overflow-hidden">
+      <div class="px-5 py-4 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>
+          <div class="text-xs font-black uppercase tracking-widest text-rose-400">🚫 ИСКЛЮЧЕНИЕ ИЗ ПУЛА НА ТЕКУЩИЙ ЗАБЕГ</div>
+          <h3 class="text-lg sm:text-2xl font-black text-white">Заблокировать 1 предмет вместо прокачки уровня</h3>
+          <p id="banishModalPoolCounter" class="text-xs text-slate-300 mt-0.5">Осталось в пуле: 30 / 30 (блокировка доступна до 5 предм.)</p>
+        </div>
+        <button id="btnCloseBanishModal" type="button" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-600 transition flex-shrink-0">
+          ⬅️ Назад к выбору прокачки
+        </button>
+      </div>
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1">
+        <div id="banishItemsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
     </div>
   </div>
 

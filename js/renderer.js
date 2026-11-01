@@ -1246,9 +1246,12 @@
         }
       }
 
-      // 2.5. Нижняя стартовая граница моста (0 М) позади точки спавна игрока
-      if (viewBottom >= 20) {
-        const startBarY = 38;
+      // 2.5. Зона ограничения на старте спавнится внизу стартового экрана!
+      const startLimitY = state.startBottomLimitY !== undefined
+        ? state.startBottomLimitY
+        : (Math.round(canvasHeight * 0.35) - 34);
+      if (viewBottom >= startLimitY - 20) {
+        const startBarY = startLimitY + 18;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2.5;
@@ -1438,7 +1441,20 @@
       for (let i = 0; i < renderQueue3D.length; i++) {
         const item = renderQueue3D[i];
         if (item.kind === 'obstacle') {
-          drawSingle3DStreetObstacle(ctx, item.ref);
+          const obs = item.ref;
+          drawSingle3DStreetObstacle(ctx, obs);
+          if (obs.hp !== undefined && obs.maxHp && obs.hp < obs.maxHp) {
+            ctx.save();
+            const bw = 34;
+            const bh = 4.5;
+            const bx = obs.x - bw / 2;
+            const by = obs.y - (obs.isCircle ? obs.radius + 16 : (obs.halfH || 20) + 18);
+            ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+            ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(bx, by, bw * Math.max(0, obs.hp / obs.maxHp), bh);
+            ctx.restore();
+          }
         } else if (item.kind === 'turret') {
           const t = item.ref;
           ctx.save();

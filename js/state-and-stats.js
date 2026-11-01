@@ -1063,6 +1063,9 @@
 
       weapons: {},
       abilities: {},
+      banishedItems: new Set(),
+      startBottomLimitY: 220,
+      lastWarnedBossMeters: 0,
 
       // Entities on street
       zombies: [],
@@ -1585,17 +1588,35 @@
     // +5% к скорости перемещения, +10% к длине деша, -10% КД деша и +10% к времени неуязвимости Деша!
     function getPlayerLevelBonuses() {
       const lvlCount = Math.max(0, (state.level || 1) - 1);
-      const speedMult = 1 + lvlCount * 0.05;
-      const dashLengthMult = 1 + lvlCount * 0.10;
-      const dashDistance = 155 * dashLengthMult;
-      const dashCooldown = Math.max(0.12, 1.0 * Math.pow(0.90, lvlCount));
-      const dashInvuln = 0.5 * (1 + lvlCount * 0.10);
+      const speedMult = 1 + lvlCount * 0.025; // +2.5% к скорости перемещения за уровень
+      const dashDuration = Math.min(2.0, +(0.20 + lvlCount * 0.05).toFixed(2)); // 0.2с + 0.05с за уровень (до 2.0с)
+      const dashInvuln = dashDuration; // Неуязвимость связана со временем всего рывка (0.2с -> 2.0с)
+      const dashCooldown = Math.max(0.30, +(10.0 - lvlCount * 0.10).toFixed(2)); // 10с - 0.1с за уровень (минимум 0.3с)
+      const dashSpeedPxPerSec = 760; // Одинаковая скорость рывка для всех персонажей
+      const dashDistance = Math.round(dashSpeedPxPerSec * dashDuration);
       return {
         lvlCount,
         speedMult,
-        dashLengthMult,
-        dashDistance,
+        dashDuration,
+        dashInvuln,
         dashCooldown,
-        dashInvuln
+        dashSpeedPxPerSec,
+        dashDistance
       };
+    }
+
+    function getUnbanishedCandidates() {
+      const banished = state.banishedItems || new Set();
+      return [
+        ...WEAPONS_POOL.filter(w => !banished.has(w.id)).map(w => ({ kind: 'weapon', id: w.id, def: w })),
+        ...ABILITIES_POOL.filter(a => !banished.has(a.id)).map(a => ({ kind: 'ability', id: a.id, def: a }))
+      ];
+    }
+
+    function getUnbanishedCandidates() {
+      const banished = state.banishedItems || new Set();
+      return [
+        ...WEAPONS_POOL.filter(w => !banished.has(w.id)).map(w => ({ kind: 'weapon', id: w.id, def: w })),
+        ...ABILITIES_POOL.filter(a => !banished.has(a.id)).map(a => ({ kind: 'ability', id: a.id, def: a }))
+      ];
     }

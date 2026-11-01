@@ -66,14 +66,14 @@
       state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10);
       addDamageNumber(state.player.x, state.player.y - 28, '+10 Макс. HP', '#4ade80');
 
-      const candidates = [
-        ...WEAPONS_POOL.map(w => ({ kind: 'weapon', id: w.id, def: w })),
-        ...ABILITIES_POOL.map(a => ({ kind: 'ability', id: a.id, def: a }))
-      ];
+      const candidates = typeof getUnbanishedCandidates === 'function'
+        ? getUnbanishedCandidates()
+        : [
+            ...WEAPONS_POOL.map(w => ({ kind: 'weapon', id: w.id, def: w })),
+            ...ABILITIES_POOL.map(a => ({ kind: 'ability', id: a.id, def: a }))
+          ];
 
       if (randomDropMode) {
-        // Автовыбор: разыгрывает 3 предмета в рулетке, в первую очередь смотрит на КАЧЕСТВО (редкость),
-        // а если качество совпадает — отдаёт приоритет более вкачанному предмету (currentLvl)!
         const rolledThree = rollRouletteItems(candidates, 3).map(item => {
           const isWeapon = item.kind === 'weapon';
           const currentLvl = isWeapon
@@ -86,11 +86,8 @@
         });
 
         rolledThree.sort((a, b) => {
-          // 1. Приоритет №1: Качество (Редкость прокачки)
           if (b.rarityRank !== a.rarityRank) return b.rarityRank - a.rarityRank;
-          // 2. Приоритет №2 (при равном качестве): Более прокачанный предмет
           if (b.currentLvl !== a.currentLvl) return b.currentLvl - a.currentLvl;
-          // 3. При прочих равных — более редкий по силе предмет
           return getItemDropChance(a.item.id) - getItemDropChance(b.item.id);
         });
 
@@ -115,16 +112,126 @@
       if (btn) {
         btn.disabled = state.rerolls <= 0;
         btn.className = state.rerolls > 0
-          ? 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm shadow-lg border border-indigo-400/60 flex items-center gap-2 flex-shrink-0 transition transform active:scale-95 cursor-pointer'
+          ? 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm shadow-lg border border-indigo-400/60 flex items-center gap-2 flex-shrink-0 transition transform active:scale-95'
           : 'px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-black text-xs sm:text-sm border border-slate-700 flex items-center gap-2 flex-shrink-0 opacity-60 cursor-not-allowed';
+      }
+
+      // Обновляем кнопку «🚫 Блокировка» левее кнопки Реролла (доступна пока в пуле > 5 предметов!)
+      const banishBtn = document.getElementById('btnOpenBanishModal');
+      const banishBadge = document.getElementById('banishPoolCountBadge');
+      const unbanishedCount = typeof getUnbanishedCandidates === 'function' ? getUnbanishedCandidates().length : 30;
+      const canBanish = unbanishedCount > 5;
+      if (banishBadge) {
+        banishBadge.textContent = canBanish ? `Пул: ${unbanishedCount}` : `Мин: 5`;
+      }
+      if (banishBtn) {
+        banishBtn.disabled = !canBanish;
+        banishBtn.className = canBanish
+          ? 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-black text-xs sm:text-sm shadow-lg border border-rose-400/70 flex items-center gap-2 flex-shrink-0 transition transform active:scale-95'
+          : 'px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-black text-xs sm:text-sm border border-slate-700 flex items-center gap-2 flex-shrink-0 opacity-50 cursor-not-allowed';
       }
     }
 
-    function renderLevelUpChoiceCards(candidatesList = null) {
-      const candidates = candidatesList || [
+    function openBanishItemModal() {
+      const unbanishedCount = typeof getUnbanishedCandidates === 'function' ? getUnbanishedCandidates().length : 30;
+      if (unbanishedCount <= 5) return;
+      const modal = document.getElementById('banishItemModal');
+      if (!modal) return;
+      renderBanishItemsGrid();
+      modal.classList.remove('hidden');
+    }
+
+    function renderBanishItemsGrid() {
+      const grid = document.getElementById('banishItemsGrid');
+      const countLabel = document.getElementById('banishModalPoolCounter');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const banished = state.banishedItems || new Set();
+      const unbanishedCount = 30 - banished.size;
+      if (countLabel) {
+        countLabel.textContent = `Осталось в пуле: ${unbanishedCount} / 30 (блокировка доступна до 5 предм.)`;
+      }
+
+      const allItems = [
         ...WEAPONS_POOL.map(w => ({ kind: 'weapon', id: w.id, def: w })),
         ...ABILITIES_POOL.map(a => ({ kind: 'ability', id: a.id, def: a }))
       ];
+
+      allItems.forEach(item => {
+        const isBanished = banished.has(item.id);
+        const currentLvl = item.kind === 'weapon'
+          ? (state.weapons[item.id]?.level || 0)
+          : (state.abilities[item.id]?.level || 0);
+        const freqMeta = getItemDropFrequencyMeta(item.id);
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.disabled = isBanished || unbanishedCount <= 5;
+        card.className = isBanished
+          ? 'relative p-3 rounded-xl bg-slate-950/90 border-2 border-red-600/80 opacity-60 flex flex-col justify-between gap-1.5 text-left cursor-not-allowed overflow-hidden'
+          : 'group relative p-3 rounded-xl bg-slate-900/95 hover:bg-rose-950/50 border-2 border-slate-700 hover:border-rose-400 flex flex-col justify-between gap-1.5 text-left transition transform hover:scale-[1.01] cursor-pointer overflow-hidden';
+
+        card.innerHTML = `
+          <div>
+            <div class="relative w-full h-24 rounded-lg overflow-hidden border ${isBanished ? 'border-red-600 grayscale' : 'border-slate-700'} bg-slate-950 mb-2">
+              <img src="${(document.getElementById('imgArt_' + item.id) || {}).src || ''}" alt="${item.def.name}" class="w-full h-full object-cover" />
+              ${isBanished ? `
+                <div class="absolute inset-0 bg-red-950/80 flex items-center justify-center">
+                  <span class="px-2 py-1 rounded bg-red-600 text-white font-black text-[11px] uppercase tracking-wider shadow-lg border border-white/30">🚫 ЗАБЛОКИРОВАНО</span>
+                </div>
+              ` : `
+                <div class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-slate-950/85 text-[10px] font-bold text-slate-200 border border-slate-600">
+                  ${currentLvl > 0 ? `Ур. ${currentLvl}` : 'В пуле'}
+                </div>
+              `}
+            </div>
+            <div class="flex items-center justify-between gap-1 flex-wrap">
+              <span class="text-xs font-black ${isBanished ? 'text-red-300 line-through' : 'text-white'}">${item.def.icon} ${item.def.name}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded border font-bold ${freqMeta.cls}">🎲 ${freqMeta.label}</span>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1 line-clamp-2 leading-snug">${item.def.desc}</p>
+          </div>
+          <div class="mt-1.5 pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] font-black">
+            <span class="${item.kind === 'weapon' ? 'text-amber-300' : 'text-cyan-300'}">${item.kind === 'weapon' ? '🔫 Оружие' : '⚡ Способность'}</span>
+            <span class="${isBanished ? 'text-red-400' : 'text-rose-400 group-hover:text-rose-300'}">${isBanished ? '🚫 Исключено' : '🚫 Заблокировать (вместо ур.)'}</span>
+          </div>
+        `;
+
+        if (!isBanished && unbanishedCount > 5) {
+          card.addEventListener('click', () => {
+            if (!state.banishedItems) state.banishedItems = new Set();
+            if (30 - state.banishedItems.size <= 5) return;
+            state.banishedItems.add(item.id);
+            SoundFX.playBoom(0.24, 0.07);
+            if (typeof populateArsenalCatalog === 'function') populateArsenalCatalog();
+            updateRerollButtonUI();
+            const banishModal = document.getElementById('banishItemModal');
+            if (banishModal) banishModal.classList.add('hidden');
+            const lvlModal = document.getElementById('levelUpChoiceModal');
+            if (lvlModal) lvlModal.classList.add('hidden');
+            state.paused = false;
+            state.lastTimestamp = performance.now();
+            const leftInPool = 30 - state.banishedItems.size;
+            showToast(
+              `🚫 ЗАБЛОКИРОВАНО НА ЭТОТ ЗАБЕГ: ${item.def.name}`,
+              `Предмет исключён из пула вместо прокачки! Осталось в пуле: ${leftInPool} предм.`,
+              'border-rose-500 bg-slate-950/95'
+            );
+            updateHudDOM();
+          });
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderLevelUpChoiceCards(candidatesList = null) {
+      const candidates = candidatesList || (typeof getUnbanishedCandidates === 'function'
+        ? getUnbanishedCandidates()
+        : [
+            ...WEAPONS_POOL.map(w => ({ kind: 'weapon', id: w.id, def: w })),
+            ...ABILITIES_POOL.map(a => ({ kind: 'ability', id: a.id, def: a }))
+          ]);
       const chosenThree = rollRouletteItems(candidates, 3);
       const listEl = document.getElementById('choiceCardsList');
       listEl.innerHTML = '';
@@ -628,11 +735,18 @@
       }
     ];
 
+    function getBossMissingHpRageMult(b) {
+      // По мере процентной потери ХП босс получает бонус к передвижению и частоте атак вплоть до +300% (множитель от 1.0x до 4.0x)!
+      const missingRatio = Math.max(0, Math.min(1, 1 - (b.hp / Math.max(1, b.maxHp))));
+      return 1 + missingRatio * 3.0;
+    }
+
     function getBossAttackCooldown(b) {
       const cfg = BOSS_SCALING_CONFIG;
       const rawCd = cfg.baseAttackCooldown - Math.max(0, b.kmNumber - 1) * cfg.cooldownReductionPerKm;
       const baseCd = Math.max(cfg.minAttackCooldown, rawCd);
-      return b.enraged ? baseCd * cfg.enrageCooldownMult : baseCd;
+      const freqMult = getBossMissingHpRageMult(b);
+      return Math.max(0.28, baseCd / freqMult);
     }
 
     function lockBossBottomArena(b, canvasHeight) {
@@ -1072,6 +1186,8 @@
             y: obsY,
             isCircle: true,
             radius: 19,
+            hp: 75,
+            maxHp: 75,
             angle: 0,
             flamePhase: rand() * Math.PI * 2,
             destroyed: false
@@ -1085,6 +1201,8 @@
             x: obsX,
             y: obsY,
             isCircle: false,
+            hp: 110,
+            maxHp: 110,
             halfW: 36,
             halfH: 13,
             radius: 38,
@@ -1103,6 +1221,8 @@
             x: obsX,
             y: obsY,
             isCircle: false,
+            hp: 180,
+            maxHp: 180,
             halfW: 44,
             halfH: 23,
             radius: 48,
@@ -1119,6 +1239,8 @@
             y: obsY,
             isCircle: true,
             radius: 21,
+            hp: 85,
+            maxHp: 85,
             angle: rand() * Math.PI * 2,
             smoldering: rand() < 0.5,
             flamePhase: rand() * Math.PI * 2,
@@ -1157,21 +1279,25 @@
     }
 
     // Коллизия круглой сущности (игрок, зомби, плюшка) с крупными объектами улицы (круглыми и повёрнутыми прямоугольниками)
-    function resolveEntityObstacleCollisions(entity, entityRadius) {
-      for (let i = 0; i < state.streetObstacles.length; i++) {
+    function resolveEntityObstacleCollisions(entity, entityRadius, dt = 0.016, isZombie = false) {
+      for (let i = state.streetObstacles.length - 1; i >= 0; i--) {
         const obs = state.streetObstacles[i];
-        if (obs.destroyed) continue;
+        if (!obs || obs.destroyed) continue;
+        if (obs.hitFlash && obs.hitFlash > 0 && !isZombie) {
+          obs.hitFlash = Math.max(0, obs.hitFlash - dt);
+        }
 
-        // Быстрая отсечка по ограничивающему радиусу
         const maxR = (obs.radius || 46) + entityRadius + 4;
         const dx = entity.x - obs.x;
         const dy = entity.y - obs.y;
         if (Math.abs(dx) > maxR || Math.abs(dy) > maxR) continue;
 
+        let collided = false;
         if (obs.isCircle) {
           const dist = Math.hypot(dx, dy);
           const minDist = obs.radius + entityRadius;
           if (dist < minDist) {
+            collided = true;
             const nx = dist > 0.001 ? dx / dist : 0;
             const ny = dist > 0.001 ? dy / dist : 1;
             const push = minDist - dist;
@@ -1179,7 +1305,6 @@
             entity.y += ny * push;
           }
         } else {
-          // Повёрнутый прямоугольник (машина, баррикада)
           const cosA = Math.cos(-obs.angle);
           const sinA = Math.sin(-obs.angle);
           const localX = dx * cosA - dy * sinA;
@@ -1192,6 +1317,7 @@
           const distSq = diffX * diffX + diffY * diffY;
 
           if (distSq < entityRadius * entityRadius) {
+            collided = true;
             const dist = Math.sqrt(distSq);
             let pushLocalX = 0;
             let pushLocalY = 0;
@@ -1200,7 +1326,6 @@
               pushLocalX = (diffX / dist) * overlap;
               pushLocalY = (diffY / dist) * overlap;
             } else {
-              // Центр попал внутрь прямоугольника — выталкиваем к ближайшей грани
               const penX = obs.halfW - Math.abs(localX) + entityRadius;
               const penY = obs.halfH - Math.abs(localY) + entityRadius;
               if (penX < penY) {
@@ -1215,11 +1340,41 @@
             entity.y += pushLocalX * sinBack + pushLocalY * cosBack;
           }
         }
+
+        // Зомби, упираясь в препятствие, постепенно ломают его!
+        if (collided && isZombie) {
+          if (obs.maxHp === undefined) {
+            obs.maxHp = obs.kind === 'destroyed_car' ? 180 : (obs.kind === 'barricade' ? 110 : 80);
+            obs.hp = obs.maxHp;
+          }
+          const breakDmg = Math.max(22, (entity.contactDmg || 18) * 1.8) * dt;
+          obs.hp -= breakDmg;
+          obs.hitFlash = 0.12;
+          if (Math.random() < 0.14 && state.visualEffects.length < 140) {
+            state.visualEffects.push({
+              type: 'voxel_splat',
+              x: obs.x + (Math.random() - 0.5) * 20,
+              y: obs.y + (Math.random() - 0.5) * 16,
+              vx: (Math.random() - 0.5) * 90,
+              vy: -40 - Math.random() * 60,
+              size: 4.5,
+              color: '#94a3b8',
+              timer: 0.22,
+              maxTimer: 0.22
+            });
+          }
+          if (obs.hp <= 0) {
+            state.streetObstacles.splice(i, 1);
+            destroyStreetObstacle(obs, false);
+          }
+        }
       }
     }
 
     function destroyStreetObstacle(obs, allowSecondaryBlast = true) {
-      if (!obs || obs.destroyed) return;
+      if (!obs || obs._destroyedDone) return;
+      obs.destroyed = true;
+      obs._destroyedDone = true;
       obs.destroyed = true;
 
       // Оставляем на асфальте плоский след разрушенного объекта (без коллизии)
@@ -2269,7 +2424,7 @@
 
       const lvlBonuses = typeof getPlayerLevelBonuses === 'function'
         ? getPlayerLevelBonuses()
-        : { speedMult: 1, dashDistance: 155, dashCooldown: 1.0, dashInvuln: 0.5 };
+        : { speedMult: 1, dashDuration: 0.2, dashInvuln: 0.2, dashCooldown: 10.0, dashSpeedPxPerSec: 760, dashDistance: 152 };
 
       if (p.dashCdTimer > 0) p.dashCdTimer = Math.max(0, p.dashCdTimer - dt);
 
@@ -2281,54 +2436,59 @@
         p.lastMoveDirY = moveY;
       }
 
-      // Деш на Shift: даёт 0.5с неуязвимости (+10% за уровень), КД 1с (-10% за уровень), длина +10% за уровень
-      const shiftPressed = !!(keys['ShiftLeft'] || keys['ShiftRight'] || keys['Shift']);
-      if ((shiftPressed || state.triggerDashRequested) && (p.dashCdTimer || 0) <= 0 && (p.dashActiveTimer || 0) <= 0) {
+      // Деш работает ТОЛЬКО по нажатию Shift (зажимать нельзя!) и одинаков для всех персонажей:
+      // КД 10с (-0.1с/ур., мин 0.3с), длительность и неуязвимость 0.2с (+0.05с/ур., макс 2.0с)
+      if (state.triggerDashRequested) {
         state.triggerDashRequested = false;
-        const dDirX = mag > 0.01 ? moveX : (p.lastMoveDirX || 0);
-        const dDirY = mag > 0.01 ? moveY : (p.lastMoveDirY !== undefined ? p.lastMoveDirY : -1);
-        const dMag = Math.hypot(dDirX, dDirY) || 1;
-        const nx = dDirX / dMag;
-        const ny = dDirY / dMag;
-        const dashDur = 0.14;
-        p.dashActiveTimer = dashDur;
-        p.dashVelX = nx * (lvlBonuses.dashDistance / dashDur);
-        p.dashVelY = ny * (lvlBonuses.dashDistance / dashDur);
-        p.dashCdTimer = lvlBonuses.dashCooldown;
-        p.dashMaxCd = lvlBonuses.dashCooldown;
-        p.invulnTimer = Math.max(p.invulnTimer || 0, lvlBonuses.dashInvuln);
-        SoundFX.playShoot(540, 0.07, 'triangle', 0.045);
-        state.visualEffects.push({
-          type: 'shockwave_ring',
-          x: p.x,
-          y: p.y,
-          maxRadius: 36,
-          color: '#38bdf8',
-          timer: 0.22,
-          maxTimer: 0.22
-        });
+        if ((p.dashCdTimer || 0) <= 0 && (p.dashActiveTimer || 0) <= 0) {
+          const dDirX = mag > 0.01 ? moveX : (p.lastMoveDirX || 0);
+          const dDirY = mag > 0.01 ? moveY : (p.lastMoveDirY !== undefined ? p.lastMoveDirY : -1);
+          const dMag = Math.hypot(dDirX, dDirY) || 1;
+          p.dashDirX = dDirX / dMag;
+          p.dashDirY = dDirY / dMag;
+          p.dashActiveTimer = lvlBonuses.dashDuration;
+          p.dashCdTimer = lvlBonuses.dashCooldown;
+          p.dashMaxCd = lvlBonuses.dashCooldown;
+          // Неуязвимость связана со временем всего рывка!
+          p.invulnTimer = Math.max(p.invulnTimer || 0, lvlBonuses.dashInvuln);
+          SoundFX.playShoot(540, 0.08, 'triangle', 0.045);
+          state.visualEffects.push({
+            type: 'shockwave_ring',
+            x: p.x,
+            y: p.y,
+            maxRadius: 38,
+            color: '#38bdf8',
+            timer: 0.22,
+            maxTimer: 0.22
+          });
+        }
       }
-      state.triggerDashRequested = false;
 
       if (p.dashActiveTimer && p.dashActiveTimer > 0) {
         p.dashActiveTimer = Math.max(0, p.dashActiveTimer - dt);
-        p.x += (p.dashVelX || 0) * dt;
-        p.y += (p.dashVelY || 0) * dt;
+        // Во время всего рывка поддерживается неуязвимость и можно подруливать направлением
+        p.invulnTimer = Math.max(p.invulnTimer || 0, p.dashActiveTimer + 0.02);
+        const curDirX = mag > 0.01 ? moveX : (p.dashDirX || 0);
+        const curDirY = mag > 0.01 ? moveY : (p.dashDirY !== undefined ? p.dashDirY : -1);
+        const dashSpd = lvlBonuses.dashSpeedPxPerSec || 760;
+        p.x += curDirX * dashSpd * dt;
+        p.y += curDirY * dashSpd * dt;
         p.walkFrame += dt * 18;
         if (state.visualEffects.length < 150) {
           state.visualEffects.push({
             type: 'voxel_splat',
             x: p.x + (Math.random() - 0.5) * 14,
             y: p.y + 8,
-            vx: -(p.dashVelX || 0) * 0.12,
-            vy: -(p.dashVelY || 0) * 0.12,
+            vx: -curDirX * 85,
+            vy: -curDirY * 85,
             size: 6,
             color: '#38bdf8',
-            timer: 0.20,
-            maxTimer: 0.20
+            timer: 0.18,
+            maxTimer: 0.18
           });
         }
       } else if (mag > 0.01) {
+        // Скорость перемещения увеличивается на +2.5% за каждый уровень
         const effectiveSpeed = p.speed * skin.speedMult * lvlBonuses.speedMult;
         p.x += moveX * effectiveSpeed * dt;
         p.y += moveY * effectiveSpeed * dt;
@@ -2341,16 +2501,20 @@
       const roadRight = canvasWidth * 0.86;
       const roadWidth = roadRight - roadLeft;
       ensureProceduralStreetChunks(canvasWidth, canvasHeight);
-      resolveEntityObstacleCollisions(p, p.radius);
+      resolveEntityObstacleCollisions(p, p.radius, dt, false);
       p.x = Math.max(roadLeft + 22, Math.min(roadRight - 22, p.x));
-      // Нижняя граница на старте моста (0 м): игрок не может уйти вниз за точку спавна!
-      if (p.y > 0) {
-        p.y = 0;
+
+      // Зона ограничения на старте спавнится ВНИЗУ ЭКРАНА (в мировой точке низа стартового экрана)!
+      const startBottomLimitY = state.startBottomLimitY !== undefined
+        ? state.startBottomLimitY
+        : (Math.round(canvasHeight * 0.35) - 26);
+      if (p.y > startBottomLimitY) {
+        p.y = startBottomLimitY;
         if (moveY > 0) moveY = 0;
       }
 
-      // IMPASSABLE ROADBLOCK: Только верхний барьер перед боссом (сзади ограничение полностью убрано!)
-      let targetCamY = p.y - canvasHeight * 0.65;
+      // IMPASSABLE ROADBLOCK: Верхний барьер перед боссом (сзади ограничение убрано!)
+      let targetCamY = Math.min(0 - canvasHeight * 0.65, p.y - canvasHeight * 0.65);
       if (state.boss) {
         const barrierY = state.boss.barrierY !== undefined
           ? state.boss.barrierY
@@ -2360,7 +2524,7 @@
           p.y = playerTopLimitY;
           if (moveY < 0) moveY = 0;
         }
-        targetCamY = Math.max(p.y - canvasHeight * 0.65, barrierY + 14);
+        targetCamY = Math.max(targetCamY, barrierY + 14);
       }
 
       state.cameraY += (targetCamY - state.cameraY) * Math.min(1, dt * 10);
@@ -2376,9 +2540,21 @@
       }
 
       // Check if player reached the next Kilometer Milestone (1000m, 2000m, 3000m...)
+      // Когда до босса остаётся 100 м — выводим на экран тревожное уведомление о приближении к огромной сущности!
+      const metersToNextBoss = state.nextBossMeters - state.maxDistanceMeters;
+      if (!state.boss && metersToNextBoss <= 100 && metersToNextBoss > 0 && state.lastWarnedBossMeters !== state.nextBossMeters) {
+        state.lastWarnedBossMeters = state.nextBossMeters;
+        SoundFX.playLaser(230, 0.35);
+        state.screenShake = Math.max(state.screenShake, 0.28);
+        showToast(
+          `⚠️ ДО РУБЕЖА ${Math.round(state.nextBossMeters / 1000)} КМ ОСТАЛОСЬ ${metersToNextBoss} М!`,
+          `Внимание! Вы приближаетесь к огромной сущности впереди на мосту!`,
+          'border-red-500 bg-red-950/95 shadow-[0_0_25px_rgba(239,68,68,0.8)]'
+        );
+      }
+
       if (!state.boss && state.maxDistanceMeters >= state.nextBossMeters) {
-        const kmReached = Math.floor(state.nextBossMeters / 1000);
-        spawnKilometerBoss(canvasWidth, kmReached, canvasHeight);
+        spawnKilometerBoss(canvasWidth, Math.round(state.nextBossMeters / 1000), canvasHeight);
       }
 
       // 2. Fire All Independent Base Weapons + Update Spinning Leeks
@@ -2768,7 +2944,7 @@
         z.x += Math.cos(ang) * spd * dt;
         z.y += Math.sin(ang) * spd * dt;
         z.wobblePhase += dt * 8;
-        resolveEntityObstacleCollisions(z, z.size * 0.85);
+        resolveEntityObstacleCollisions(z, z.size * 0.85, dt, true);
 
         // Fast neighbor push
         if (i > 0) {
@@ -2830,9 +3006,10 @@
         if (b.hitFlash > 0) b.hitFlash -= dt;
 
         const bossPct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100));
+        const rageBonusPct = Math.round((getBossMissingHpRageMult(b) - 1) * 100);
         document.getElementById('bossHpBar').style.width = `${bossPct}%`;
         document.getElementById('bossHpText').textContent =
-          `👑 БОСС ${b.kmNumber} КМ: ${b.title || 'ЗОМБИ-ТИТАН'} — ${Math.max(0, Math.ceil(b.hp))} / ${b.maxHp} HP`;
+          `👑 БОСС ${b.kmNumber} КМ: ${b.title || 'ЗОМБИ-ТИТАН'} — ${Math.max(0, Math.ceil(b.hp))} / ${b.maxHp} HP (Ярость: +${rageBonusPct}% скор./атак)`;
 
         if (b.hp <= 0) {
           const defeatedKm = b.kmNumber;
@@ -2848,8 +3025,6 @@
             fx => fx.type !== 'boss_hazard_zone' && fx.type !== 'boss_laser_sweep'
           );
 
-          // ПОСЛЕ УБИЙСТВА БОССА:
-          // Зомби получают +3 множитель ХП, +15% к скорости и +15% к урону, а игрок +5 множитель опыта!
           const prevHpMult = getKmMultiplier();
           const prevSpdMult = getKmEnemySpeedMultiplier();
           const prevDmgMult = getKmEnemyDamageMultiplier();
@@ -2870,14 +3045,9 @@
           }
 
           createSquareExplosion(bossX, bossY, 190, 9999, '#facc15');
-          // Босс гарантированно даёт +1 уровень игрока напрямую (не влияет на опыт и шкалу XP!)
           spawnZombieDeathParticles({ x: bossX, y: bossY, xpDrops: 0, xpPerDrop: 0, type: 'boss', isBoss: true });
 
-          // Shatter upper (and lower) roadblock barriers!
           const barriersToShatter = [barrierY + 68];
-          if (b.bottomBarrierLocked && b.bottomBarrierY !== undefined) {
-            barriersToShatter.push(b.bottomBarrierY);
-          }
           for (const bLineY of barriersToShatter) {
             for (let sp = 0; sp < 22; sp++) {
               state.visualEffects.push({
@@ -2909,21 +3079,22 @@
           SoundFX.playLevelUp(true);
           grantLevelUpReward(true);
         } else {
-          // Проверка перехода Босса в фазу ЯРОСТИ (< 45% HP)
-          if (!b.enraged && b.hp <= b.maxHp * (BOSS_SCALING_CONFIG.enrageHpThreshold || 0.45)) {
+          // Плавный рост скорости и частоты атак босса до +300% по мере потери его ХП
+          const rageMult = getBossMissingHpRageMult(b);
+          if (!b.enraged && b.hp <= b.maxHp * 0.50) {
             b.enraged = true;
-            b.speed = Math.round(b.speed * (BOSS_SCALING_CONFIG.enrageSpeedMult || 1.32));
             showToast(
-              `🔥 БОСС ${b.kmNumber} КМ ВПАЛ В ЯРОСТЬ!`,
-              `Скорость +32%, частота спец-атак увеличена!`,
+              `🔥 БОСС ${b.kmNumber} КМ РАССВИРЕПЕЛ!`,
+              `Потеря ХП усиливает скорость и частоту атак босса вплоть до +300%!`,
               'border-red-500 bg-red-950/95'
             );
-            state.screenShake = Math.max(state.screenShake, 0.42);
-            SoundFX.playBoom(0.4, 0.12);
+            state.screenShake = Math.max(state.screenShake, 0.38);
+            SoundFX.playBoom(0.35, 0.10);
           }
 
           const ang = Math.atan2(p.y - b.y, p.x - b.x);
-          const spd = b.chillTimer > 0 ? b.speed * 0.5 : b.speed;
+          const baseSpd = b.chillTimer > 0 ? b.speed * 0.5 : b.speed;
+          const spd = baseSpd * rageMult;
           if (b.chillTimer > 0) b.chillTimer -= dt;
 
           // Обработка прыжка босса в воздухе (напрыгивание на фиксированное расстояние!)
@@ -2948,7 +3119,6 @@
                 timer: 0.45,
                 maxTimer: 0.45
               });
-              // Разлёт осколков/шипов при приземлении босса
               const landShards = 10 + Math.min(10, b.kmNumber * 2);
               for (let k = 0; k < landShards; k++) {
                 const sa = (k / landShards) * Math.PI * 2;
@@ -2970,10 +3140,10 @@
             b.y += Math.sin(ang) * spd * dt;
           }
 
-          // Удерживаем босса в пределах моста и верхнего барьера (без ограничения снизу!)
+          // Удерживаем босса в пределах моста и верхнего барьера
           b.x = Math.max(roadLeft + b.size, Math.min(roadRight - b.size, b.x));
           if (b.barrierY !== undefined && b.y < b.barrierY + 95) b.y = b.barrierY + 95;
-          if (b.y > 0) b.y = 0;
+          if (b.y > startBottomLimitY) b.y = startBottomLimitY;
           damageObstaclesInCircle(b.x, b.y, b.size + 12, true);
 
           b.attackTimer -= dt;
@@ -2984,160 +3154,381 @@
             const pMult = b.projDmgMult || (1 + (km - 1) * 0.38);
             const spdScale = 1 + Math.min(0.85, (km - 1) * 0.12);
 
-            // Случайный выбор способности из открытого пула босса (1 способность на 1 км, 2 на 2 км ... 5 с 5 км)
             const pool = (Array.isArray(b.unlockedAttacks) && b.unlockedAttacks.length > 0)
               ? b.unlockedAttacks
               : ['titan_leap_slam'];
             const chosenAttack = pool[Math.floor(Math.random() * pool.length)];
 
+            // У каждого из 5 боссов — 5 собственных уникальных атак (пересечение <= 2 с любым другим боссом!)
             switch (chosenAttack) {
-              // === НАПРЫГИВАНИЕ В СТОРОНУ ИГРОКА НА ФИКСИРОВАННОЕ РАССТОЯНИЕ (Замена лазеров для брутов/мутантов!) ===
+              // ==================== БОСС 1: TITAN (Зомби-Титан) ====================
               case 'titan_leap_slam':
                 startBossFixedDistanceLeap(b, p, roadLeft, roadRight, 245, 'quake');
                 break;
+
+              case 'titan_boulder_hurl': {
+                // Прицельный бросок 3 огромных валунов вокруг игрока с осколками
+                for (let i = 0; i < 3 + Math.min(3, Math.floor(km / 2)); i++) {
+                  const tx = Math.max(roadLeft + 75, Math.min(roadRight - 75, p.x + (i === 0 ? 0 : (Math.random() - 0.5) * 260)));
+                  const ty = p.y + (i === 0 ? 0 : (Math.random() - 0.5) * 210);
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: tx, y: ty, radius: 78,
+                    damage: Math.round(36 * pMult), color: '#facc15', spawnAcid: false,
+                    timer: 0.78, maxTimer: 0.78
+                  });
+                }
+                SoundFX.playBoom(0.28, 0.08);
+                break;
+              }
+
+              case 'titan_seismic_fissure': {
+                // Тройная сейсмическая трещина веером (-24°, 0°, +24°)
+                for (const branchOffset of [-0.42, 0, 0.42]) {
+                  const bAng = ang + branchOffset;
+                  for (let sIdx = 1; sIdx <= 4; sIdx++) {
+                    const gx = Math.max(roadLeft + 50, Math.min(roadRight - 50, b.x + Math.cos(bAng) * (sIdx * 76)));
+                    const gy = b.y + Math.sin(bAng) * (sIdx * 76);
+                    state.visualEffects.push({
+                      type: 'boss_hazard_zone',
+                      x: gx, y: gy, radius: 56,
+                      damage: Math.round(30 * pMult), color: '#eab308', spawnAcid: false,
+                      timer: 0.35 + sIdx * 0.14, maxTimer: 0.35 + sIdx * 0.14
+                    });
+                  }
+                }
+                SoundFX.playBoom(0.32, 0.09);
+                break;
+              }
+
+              case 'titan_shockwave_roar': {
+                // Оглушающий рёв Титана: отталкивающая звуковая волна + кольцо каменных глыб
+                state.visualEffects.push({
+                  type: 'shockwave_ring', x: b.x, y: b.y, maxRadius: 230, color: '#facc15', timer: 0.48, maxTimer: 0.48
+                });
+                if (Math.hypot(p.x - b.x, p.y - b.y) < 250) {
+                  p.x = Math.max(roadLeft + 24, Math.min(roadRight - 24, p.x + Math.cos(ang) * 95));
+                  p.y = Math.min(startBottomLimitY, p.y + Math.sin(ang) * 95);
+                }
+                const rocks = 10 + extraProj;
+                for (let k = 0; k < rocks; k++) {
+                  const a = (k / rocks) * Math.PI * 2;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * 230 * spdScale, vy: Math.sin(a) * 230 * spdScale,
+                    radius: 9, damage: Math.round(20 * pMult), color: '#eab308', life: 2.3
+                  });
+                }
+                SoundFX.playBoom(0.35, 0.10);
+                break;
+              }
+
+              case 'titan_bull_rush': {
+                // Таранный рывок Короля Перекрёстка + вызов телохранителей-громил
+                const rushDist = 175;
+                b.x = Math.max(roadLeft + b.size, Math.min(roadRight - b.size, b.x + Math.cos(ang) * rushDist));
+                b.y = Math.min(startBottomLimitY, Math.max((b.barrierY || -999999) + 95, b.y + Math.sin(ang) * rushDist));
+                spawnZombieWave(canvasWidth, canvasHeight);
+                SoundFX.playBoom(0.30, 0.09);
+                break;
+              }
+
+              // ==================== БОСС 2: CYBER_RIOT (Кибер-Голиаф ОМОН-X) ====================
+              case 'cyber_laser_sweep': {
+                // Вращающийся тактический лазерный резак ОМОН-X
+                const sweepDur = Math.max(1.15, 1.85 - km * 0.08);
+                state.visualEffects.push({
+                  type: 'boss_laser_sweep',
+                  bossRef: b, x: b.x, y: b.y,
+                  startAngle: ang - 0.55,
+                  totalSweep: Math.PI * 1.05,
+                  beamCount: km >= 4 ? 4 : 2,
+                  beamLength: Math.max(canvasWidth, canvasHeight) * 0.75,
+                  beamWidth: 18,
+                  damagePerSec: Math.round((48 + km * 16) * pMult),
+                  color: '#00f0ff',
+                  timer: sweepDur, maxTimer: sweepDur
+                });
+                SoundFX.playLaser(340, 0.28);
+                break;
+              }
+
+              case 'cyber_shotgun_barrage': {
+                // Плотный веерный залп плазменной картечи из дробовика ОМОН
+                const pellets = 5 + Math.min(6, km);
+                for (let k = -pellets; k <= pellets; k++) {
+                  const a = ang + k * 0.11;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * 355 * spdScale, vy: Math.sin(a) * 355 * spdScale,
+                    radius: 6.5, damage: Math.round(19 * pMult), color: '#38bdf8', life: 2.0
+                  });
+                }
+                SoundFX.playShoot(210, 0.09, 'sawtooth', 0.05);
+                break;
+              }
+
+              case 'cyber_emp_grid': {
+                // Квадратная электромагнитная сеть из 5 ЭМП-узлов вокруг игрока
+                const offsets = [[0, 0], [-115, -115], [115, -115], [-115, 115], [115, 115]];
+                for (const [ox, oy] of offsets) {
+                  const gx = Math.max(roadLeft + 65, Math.min(roadRight - 65, p.x + ox));
+                  const gy = p.y + oy;
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: gx, y: gy, radius: 66,
+                    damage: Math.round(34 * pMult), color: '#38bdf8', spawnAcid: false,
+                    timer: 0.82, maxTimer: 0.82
+                  });
+                }
+                SoundFX.playLaser(520, 0.18);
+                break;
+              }
+
+              case 'cyber_shield_ram': {
+                // Реактивный таран щитом с электрическим следом
+                for (let s = 1; s <= 3; s++) {
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: b.x + Math.cos(ang) * (s * 48),
+                    y: b.y + Math.sin(ang) * (s * 48),
+                    radius: 54, damage: Math.round(28 * pMult), color: '#00f0ff', spawnAcid: false,
+                    timer: 0.45, maxTimer: 0.45
+                  });
+                }
+                b.x = Math.max(roadLeft + b.size, Math.min(roadRight - b.size, b.x + Math.cos(ang) * 165));
+                b.y = Math.min(startBottomLimitY, Math.max((b.barrierY || -999999) + 95, b.y + Math.sin(ang) * 165));
+                SoundFX.playBoom(0.28, 0.08);
+                break;
+              }
+
+              case 'cyber_squad_deploy': {
+                // Вызов спецназа щитоносцев + круговой электро-импульс
+                spawnZombieWave(canvasWidth, canvasHeight);
+                for (let k = 0; k < 8; k++) {
+                  const a = (k / 8) * Math.PI * 2;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * 280, vy: Math.sin(a) * 280,
+                    radius: 7, damage: Math.round(20 * pMult), color: '#00f0ff', life: 2.2
+                  });
+                }
+                SoundFX.playLaser(410, 0.20);
+                break;
+              }
+
+              // ==================== БОСС 3: PLAGUE_SPITTER (Токсичный Архивариус Чумы) ====================
               case 'plague_mutant_leap':
                 startBossFixedDistanceLeap(b, p, roadLeft, roadRight, 235, 'acid');
                 break;
+
+              case 'plague_acid_mortar': {
+                // Навесной обстрел бурлящими кислотными бомбами, оставляющими лужи кислоты
+                const mortarCount = 4 + Math.min(4, km);
+                for (let i = 0; i < mortarCount; i++) {
+                  const zx = Math.max(roadLeft + 70, Math.min(roadRight - 70, p.x + (i === 0 ? 0 : (Math.random() - 0.5) * 300)));
+                  const zy = p.y + (i === 0 ? 0 : (Math.random() - 0.5) * 240);
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: zx, y: zy, radius: 72,
+                    damage: Math.round(32 * pMult), color: '#84cc16', spawnAcid: true,
+                    timer: 0.85, maxTimer: 0.85
+                  });
+                }
+                SoundFX.playShoot(260, 0.12, 'sine', 0.06);
+                break;
+              }
+
+              case 'plague_spore_nova': {
+                // Двойная спираль крупных ядовитых спор
+                const spores = 14 + extraProj;
+                for (let k = 0; k < spores; k++) {
+                  const a = (k / spores) * Math.PI * 2 + state.timeElapsed * 1.5;
+                  const spdVar = (k % 2 === 0 ? 215 : 275) * spdScale;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * spdVar, vy: Math.sin(a) * spdVar,
+                    radius: 8.5, damage: Math.round(18 * pMult), color: '#a3e635', life: 2.7
+                  });
+                }
+                SoundFX.playShoot(180, 0.10, 'triangle', 0.05);
+                break;
+              }
+
+              case 'plague_geyser_trail': {
+                // Линия прорывающихся из-под асфальта кислотных гейзеров к игроку
+                for (let sIdx = 1; sIdx <= 5; sIdx++) {
+                  const gx = Math.max(roadLeft + 55, Math.min(roadRight - 55, b.x + Math.cos(ang) * (sIdx * 72)));
+                  const gy = b.y + Math.sin(ang) * (sIdx * 72);
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: gx, y: gy, radius: 60,
+                    damage: Math.round(30 * pMult), color: '#a3e635', spawnAcid: true,
+                    timer: 0.40 + sIdx * 0.13, maxTimer: 0.40 + sIdx * 0.13
+                  });
+                }
+                SoundFX.playBoom(0.26, 0.08);
+                break;
+              }
+
+              case 'plague_outbreak_wave': {
+                // Направленная туча био-паразитов + токсичные лужи вокруг босса
+                for (let i = 0; i < 12; i++) {
+                  const a = ang + (Math.random() - 0.5) * 0.95;
+                  const sp = (220 + Math.random() * 140) * spdScale;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                    radius: 6, damage: Math.round(17 * pMult), color: '#bef264', life: 2.0
+                  });
+                }
+                if (state.acidPools.length < 18) {
+                  state.acidPools.push({
+                    x: b.x, y: b.y, radius: 68, damagePerSec: Math.round(26 * pMult), isHealingZone: false, timer: 4.0
+                  });
+                }
+                SoundFX.playShoot(240, 0.10, 'sawtooth', 0.05);
+                break;
+              }
+
+              // ==================== БОСС 4: PYRO_BOMBER (Безумный Подрывник-Джаггернаут) ====================
               case 'pyro_rocket_jump':
+                createExplosion(b.x, b.y, 95, 0, '#f97316', true);
                 startBossFixedDistanceLeap(b, p, roadLeft, roadRight, 255, 'fire');
                 break;
+
+              case 'pyro_carpet_bombs': {
+                // Поперечная ковровая шеренга из 5 динамитных связок через ширину моста
+                const rowY = p.y + (Math.random() - 0.5) * 90;
+                for (let col = 0; col < 5; col++) {
+                  const bx = roadLeft + 48 + (col / 4) * Math.max(80, roadWidth - 96);
+                  state.visualEffects.push({
+                    type: 'boss_hazard_zone',
+                    x: bx, y: rowY, radius: 64,
+                    damage: Math.round(38 * pMult), color: '#f97316', spawnAcid: false,
+                    timer: 0.80, maxTimer: 0.80
+                  });
+                }
+                SoundFX.playBoom(0.30, 0.09);
+                break;
+              }
+
+              case 'pyro_hellfire_cross': {
+                // Огнемётный Х-образный крест из 4 вращающихся струй пламени
+                state.visualEffects.push({
+                  type: 'boss_laser_sweep',
+                  bossRef: b, x: b.x, y: b.y,
+                  startAngle: ang - 0.4,
+                  totalSweep: Math.PI * 0.9,
+                  beamCount: 4,
+                  beamLength: Math.max(canvasWidth, canvasHeight) * 0.68,
+                  beamWidth: 20,
+                  damagePerSec: Math.round((50 + km * 16) * pMult),
+                  color: '#f97316',
+                  timer: 1.45, maxTimer: 1.45
+                });
+                SoundFX.playBoom(0.32, 0.10);
+                break;
+              }
+
+              case 'pyro_cluster_salvo': {
+                // Кассетный залп разрывных гранат по сектору игрока
+                for (let k = -4; k <= 4; k++) {
+                  const a = ang + k * 0.18;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * 310 * spdScale, vy: Math.sin(a) * 310 * spdScale,
+                    radius: 8.5, damage: Math.round(22 * pMult), color: '#fb923c', life: 2.1
+                  });
+                }
+                SoundFX.playShoot(170, 0.10, 'square', 0.06);
+                break;
+              }
+
+              case 'pyro_kamikaze_call': {
+                // Детонационная волна + призыв ускоренной волны подрывников
+                createExplosion(b.x, b.y, 130, 0, '#ef4444', true);
+                spawnZombieWave(canvasWidth, canvasHeight);
+                for (const z of state.zombies) {
+                  z.buffTimer = Math.max(z.buffTimer || 0, 4.5);
+                }
+                break;
+              }
+
+              // ==================== БОСС 5: NECRO_LORD (Верховный Некро-Дирижёр Ночи) ====================
               case 'necro_phantom_pounce':
                 startBossFixedDistanceLeap(b, p, roadLeft, roadRight, 240, 'shadow');
                 break;
 
-              // === БОМБАРДИРОВКА ПО ПРИЦЕЛЬНЫМ ЗОНАМ (Камни / ЭМП-мины / Кислота / Динамит / Пентаграммы) ===
-              case 'titan_boulder_hurl':
-              case 'cyber_emp_grid':
-              case 'plague_acid_mortar':
-              case 'pyro_carpet_bombs':
               case 'necro_abyss_pentagrams': {
-                const zonesCount = Math.min(8, 3 + km);
-                const zoneRadius = Math.min(115, 70 + km * 5);
-                const zoneDmg = Math.round((32 + km * 14) * pMult);
-                for (let zIdx = 0; zIdx < zonesCount; zIdx++) {
-                  const zx = Math.max(roadLeft + zoneRadius, Math.min(roadRight - zoneRadius, p.x + (zIdx === 0 ? 0 : (Math.random() - 0.5) * 320)));
-                  const zy = p.y + (zIdx === 0 ? 0 : (Math.random() - 0.5) * 260);
+                // Кольцо из 5 магических пентаграмм Бездны вокруг игрока
+                for (let k = 0; k < 5; k++) {
+                  const a = (k / 5) * Math.PI * 2 + state.timeElapsed;
+                  const dist = k === 0 ? 0 : 125;
+                  const px = Math.max(roadLeft + 65, Math.min(roadRight - 65, p.x + Math.cos(a) * dist));
+                  const py = p.y + Math.sin(a) * dist;
                   state.visualEffects.push({
                     type: 'boss_hazard_zone',
-                    x: zx,
-                    y: zy,
-                    radius: zoneRadius,
-                    damage: zoneDmg,
-                    color: b.accentColor || '#ef4444',
-                    spawnAcid: chosenAttack === 'plague_acid_mortar',
-                    timer: 0.85,
-                    maxTimer: 0.85
+                    x: px, y: py, radius: 70,
+                    damage: Math.round(36 * pMult), color: '#e879f9', spawnAcid: false,
+                    timer: 0.85, maxTimer: 0.85
                   });
                 }
-                SoundFX.playLaser(420, 0.16);
+                SoundFX.playLaser(290, 0.22);
                 break;
               }
 
-              // === НАПРАВЛЕННАЯ ЛИНИЯ ВЗРЫВОВ / ГЕЙЗЕРОВ ПО КУРСУ ИГРОКА ===
-              case 'titan_seismic_fissure':
-              case 'plague_geyser_trail': {
-                const steps = 4 + Math.min(3, Math.floor(km / 2));
-                const stepDist = 78;
-                for (let sIdx = 1; sIdx <= steps; sIdx++) {
-                  const gx = Math.max(roadLeft + 55, Math.min(roadRight - 55, b.x + Math.cos(ang) * (sIdx * stepDist)));
-                  const gy = b.y + Math.sin(ang) * (sIdx * stepDist);
-                  state.visualEffects.push({
-                    type: 'boss_hazard_zone',
-                    x: gx,
-                    y: gy,
-                    radius: 62,
-                    damage: Math.round((30 + km * 12) * pMult),
-                    color: chosenAttack === 'plague_geyser_trail' ? '#84cc16' : '#facc15',
-                    spawnAcid: chosenAttack === 'plague_geyser_trail',
-                    timer: 0.45 + sIdx * 0.14,
-                    maxTimer: 0.45 + sIdx * 0.14
-                  });
-                }
-                SoundFX.playBoom(0.30, 0.08);
-                break;
-              }
-
-              // === ВЕЕРНЫЕ И КРУГОВЫЕ ЗАЛПЫ СНАРЯДОВ ===
-              case 'titan_shockwave_roar':
-              case 'cyber_shotgun_barrage':
-              case 'plague_spore_nova':
-              case 'pyro_cluster_salvo':
               case 'necro_skull_symphony': {
-                if (chosenAttack === 'cyber_shotgun_barrage' || chosenAttack === 'pyro_cluster_salvo') {
-                  const spreadCount = 4 + Math.min(6, km);
-                  for (let k = -spreadCount; k <= spreadCount; k++) {
-                    const a = ang + k * 0.13;
-                    state.enemyProjectiles.push({
-                      x: b.x, y: b.y,
-                      vx: Math.cos(a) * 335 * spdScale, vy: Math.sin(a) * 335 * spdScale,
-                      radius: 7, damage: Math.round(20 * pMult),
-                      color: chosenAttack === 'pyro_cluster_salvo' ? '#f97316' : '#38bdf8',
-                      life: 2.2
-                    });
-                  }
-                } else {
-                  const ringCount = 12 + extraProj;
-                  for (let k = 0; k < ringCount; k++) {
-                    const a = (k / ringCount) * Math.PI * 2 + state.timeElapsed;
-                    state.enemyProjectiles.push({
-                      x: b.x, y: b.y,
-                      vx: Math.cos(a) * 255 * spdScale, vy: Math.sin(a) * 255 * spdScale,
-                      radius: 7.5, damage: Math.round(18 * pMult), color: b.accentColor || '#ef4444', life: 2.4
-                    });
-                  }
+                // Симфония черепов: спиральное кольцо + прицельный тройной залп тьмы
+                const skulls = 12 + extraProj;
+                for (let k = 0; k < skulls; k++) {
+                  const a = (k / skulls) * Math.PI * 2 - state.timeElapsed;
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(a) * 250 * spdScale, vy: Math.sin(a) * 250 * spdScale,
+                    radius: 8, damage: Math.round(20 * pMult), color: '#c084fc', life: 2.5
+                  });
                 }
-                state.visualEffects.push({
-                  type: 'shockwave_ring', x: b.x, y: b.y, maxRadius: 175 + km * 16, color: b.accentColor || '#ef4444', timer: 0.40, maxTimer: 0.40
-                });
-                SoundFX.playShoot(190, 0.08, 'sawtooth', 0.05);
+                for (const da of [-0.15, 0, 0.15]) {
+                  state.enemyProjectiles.push({
+                    x: b.x, y: b.y,
+                    vx: Math.cos(ang + da) * 360 * spdScale, vy: Math.sin(ang + da) * 360 * spdScale,
+                    radius: 9, damage: Math.round(24 * pMult), color: '#f43f5e', life: 2.2
+                  });
+                }
+                SoundFX.playLaser(360, 0.18);
                 break;
               }
 
-              // === ВРАЩАЮЩИЕСЯ ЛАЗЕРЫ / ТЁМНЫЕ ЛУЧИ / ОГНЕННЫЙ КРЕСТ (только у тематических боссов) ===
-              case 'cyber_laser_sweep':
-              case 'necro_void_lasers':
-              case 'pyro_hellfire_cross': {
-                const beamCount = chosenAttack === 'pyro_hellfire_cross' ? 4 : (km >= 3 ? 4 : 2);
-                const sweepDur = Math.max(1.2, 1.9 - km * 0.08);
+              case 'necro_void_lasers': {
+                // Луч Тёмного Обелиска
                 state.visualEffects.push({
                   type: 'boss_laser_sweep',
-                  bossRef: b,
-                  x: b.x,
-                  y: b.y,
-                  startAngle: ang - 0.55,
-                  totalSweep: Math.PI * (0.85 + Math.min(0.65, km * 0.15)),
-                  beamCount,
-                  beamLength: Math.max(canvasWidth, canvasHeight) * 0.75,
-                  beamWidth: 16 + Math.min(12, km * 2),
-                  damagePerSec: Math.round((45 + km * 18) * pMult),
-                  color: b.eyeColor || '#ef4444',
-                  timer: sweepDur,
-                  maxTimer: sweepDur
+                  bossRef: b, x: b.x, y: b.y,
+                  startAngle: ang - 0.5,
+                  totalSweep: Math.PI * 1.1,
+                  beamCount: 2,
+                  beamLength: Math.max(canvasWidth, canvasHeight) * 0.78,
+                  beamWidth: 20,
+                  damagePerSec: Math.round((52 + km * 18) * pMult),
+                  color: '#e879f9',
+                  timer: 1.55, maxTimer: 1.55
                 });
-                SoundFX.playLaser(310, 0.28);
+                SoundFX.playLaser(260, 0.28);
                 break;
               }
 
-              // === ТАРАННЫЙ РЫВОК И ПРИЗЫВ ТЕМАТИЧЕСКОЙ СВИТЫ ===
-              case 'titan_bull_rush':
-              case 'cyber_shield_ram':
-              case 'cyber_squad_deploy':
-              case 'plague_outbreak_wave':
-              case 'pyro_kamikaze_call':
               case 'necro_legion_ritual':
               default: {
-                const dashDist = Math.min(185, 110 + km * 15);
-                b.x = Math.max(roadLeft + b.size, Math.min(roadRight - b.size, b.x + Math.cos(ang) * dashDist));
-                b.y = Math.min(0, Math.max((b.barrierY || -999999) + 95, b.y + Math.sin(ang) * dashDist));
-                state.screenShake = Math.max(state.screenShake, 0.32);
-                SoundFX.playBoom(0.28, 0.09);
-                state.visualEffects.push({
-                  type: 'shockwave_ring', x: b.x, y: b.y, maxRadius: 180 + km * 20, color: b.accentColor || '#ef4444', timer: 0.42, maxTimer: 0.42
-                });
+                // Ритуал Бессмертного Легиона: призыв свиты нежити и тёмное ускорение всей орды
                 spawnZombieWave(canvasWidth, canvasHeight);
                 for (const z of state.zombies) {
-                  z.buffTimer = Math.max(z.buffTimer || 0, 4.0);
+                  z.buffTimer = Math.max(z.buffTimer || 0, 5.0);
                 }
+                state.visualEffects.push({
+                  type: 'shockwave_ring', x: b.x, y: b.y, maxRadius: 210, color: '#c084fc', timer: 0.45, maxTimer: 0.45
+                });
+                SoundFX.playBoom(0.30, 0.09);
                 break;
               }
             }
@@ -3423,11 +3814,12 @@
 
       const lvlBonuses = typeof getPlayerLevelBonuses === 'function'
         ? getPlayerLevelBonuses()
-        : { lvlCount: 0, speedMult: 1, dashLengthMult: 1, dashCooldown: 1.0, dashInvuln: 0.5 };
+        : { lvlCount: 0, speedMult: 1, dashDuration: 0.2, dashInvuln: 0.2, dashCooldown: 10.0 };
       if (bottomStatsSubtext) {
-        const spdPct = Math.round((lvlBonuses.speedMult - 1) * 100);
-        const dashPct = Math.round((lvlBonuses.dashLengthMult - 1) * 100);
-        bottomStatsSubtext.textContent = `УР.${state.level}: Скор. +${spdPct}% • Деш +${dashPct}% • Неуязв. ${lvlBonuses.dashInvuln.toFixed(2)}с • КД ${lvlBonuses.dashCooldown.toFixed(2)}с`;
+        const spdPct = +((lvlBonuses.speedMult - 1) * 100).toFixed(1);
+        const durSec = (lvlBonuses.dashDuration || 0.2).toFixed(2);
+        const cdSec = (lvlBonuses.dashCooldown || 10.0).toFixed(1);
+        bottomStatsSubtext.textContent = `УР.${state.level}: Скор. +${spdPct}% • Рывок/Неуязв. ${durSec}с • КД деша ${cdSec}с`;
       }
 
       const dashCircleArc = document.getElementById('dashCircleArc');
