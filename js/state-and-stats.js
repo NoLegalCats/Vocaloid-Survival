@@ -203,7 +203,7 @@
       // 20 Abilities
       plush_teto:            ['💥 Урон раздавливания +32%', '🧸 Радиус прыжка и взрыва +50%', '⚡ Скорость бега и прыжков +35%'],
       c130_airstrike:        ['💥 Урон фугасных авиабомб +35%', '📐 Площадь квадрата +50%', '⚡ Снижение КД бомбардировки -15%'],
-      drone_swarm:           ['💥 Урон лазерного луча +30%', '🛸 Кол-во дронов (+1 на орбиту)', '⚡ Скорострельность лазеров +20%'],
+      drone_swarm:           ['💥 Урон лазерного луча +30%', '🛸 Кол-во дронов (+2 на орбиту за ур.)', '⚡ Скорострельность лазеров +20%'],
       twin_mega_beam:        ['💥 Урон в секунду (DPS) +35%', '⚡ Снижение КД мега-луча -15%', '🔄 Сектор вращения (+90° к обороту)'],
       road_roller:           ['🛑 Сила расталкивания и урон +30%', '🚜 Ширина катка (до всей карты) +25%', '⚡ Снижение КД катка -20%'],
       meteor_rain:           ['💥 Урон падения и ожога +35%', '☄️ Радиус кратера +50%', '🔥 Кол-во метеоров в шторме (+1)'],
@@ -213,10 +213,10 @@
       drill_tornado:         ['💥 Урон перемалывания +32%', '🌀 Размер волос-буров Тето +50%', '🌪️ Отброс +25% и КД -15%'],
       bass_shockwave:        ['⚡ Снижение КД бас-дропа -20%', '🔊 Радиус звукового фронта +50%', '🌊 Сила отбрасывания назад +50%'],
       cryo_blizzard:         ['💥 Крио-урон раскалывания +50%', '❄️ Размер квадрата заморозки +50%', '🧊 Длительность обморожения +1.0с'],
-      orbital_laser:         ['💥 Фокусированный урон +50%', '📐 Вертикальная длина +45% и жизнь +3.0с', '☄️ +1 колонна плазмы и КД -10%'],
+      orbital_laser:         ['💥 Фокусированный урон +50%', '📐 Вертикальная длина +112.5% и жизнь +3.0с', '☄️ +1 колонна плазмы и КД -10%'],
       napalm_ring:           ['💥 Урон горения (DoT) +100%', '🔥 Радиус кольца пламени +50%', '⏳ Длительность горения +2.0с'],
       mortar_barrage:        ['💥 Урон прямого попадания +32%', '🚀 Радиус подрыва багета +50%', '💣 Кол-во ракет в залпе (+2)'],
-      black_hole:            ['💥 Урон сверхновой при взрыве +35%', '🕳️ Радиус захвата улицы +28%', '⚡ Снижение КД сингулярности -10%'],
+      black_hole:            ['💥 Урон сверхновой при взрыве +35%', '🕳️ Радиус захвата улицы +56%', '⚡ Снижение КД сингулярности -10%'],
       acid_juice:            ['💚 Лечение в зоне +5 HP/с', '⏱️ Длительность +2с и КД -15%', '🟢 +1 лужа и радиус зоны +35%'],
       holo_shield:           ['⚡ Снижение КД купола -30%', '🛡️ Радиус отталкивающей волны +50%', '⏱️ Длительность купола +1.0с'],
       magnet_pulse:          ['📈 Множитель опыта +100% за ур.', '🧲 Высота зоны притяжения +50%', '⚡ Снижение КД импульса -30%'],
@@ -291,8 +291,8 @@
           if (itemId === 'twin_mega_beam') {
             return `⚡ КД луча: ${bStats.cooldown.toFixed(2)}с ➔ ${aStats.cooldown.toFixed(2)}с (-${(bStats.cooldown - aStats.cooldown).toFixed(2)}с)`;
           } else if (itemId === 'drone_swarm') {
-            const bD = 1 + beforeState.level + Math.max(0, beforeState.areaPts - 1);
-            const aD = 1 + afterState.level + Math.max(0, afterState.areaPts - 1);
+            const bD = 2 * beforeState.level + Math.max(0, beforeState.areaPts - 1) * 2;
+            const aD = 2 * afterState.level + Math.max(0, afterState.areaPts - 1) * 2;
             return `🛸 Дронов на орбите: ${bD} ➔ ${aD} (+${aD - bD})`;
           } else if (itemId === 'triple_baka_overdrive') {
             const bT = (5.5 + (beforeState.areaPts - 1) * 1.4 + beforeState.level * 0.5).toFixed(1);
@@ -1064,6 +1064,9 @@
       weapons: {},
       abilities: {},
       banishedItems: new Set(),
+      playerVfxOpacity: 0.75,
+      activeConfigProfile: 'Стандарт',
+      isCustomConfig: false,
       startBottomLimitY: 220,
       lastWarnedBossMeters: 0,
 
@@ -1168,7 +1171,7 @@
           badges.push({ text: `🧸 Плюшек: ${aObj.level} • Взрыв: ${rad}px`, cls: 'bg-amber-500/95 text-slate-950' });
           badges.push({ text: `⚡ Скорость бега: ${spd}`, cls: 'bg-cyan-400/95 text-slate-950' });
         } else if (id === 'drone_swarm') {
-          const cnt = 1 + aObj.level + Math.max(0, aObj.areaPts - 1);
+          const cnt = 2 * aObj.level + Math.max(0, aObj.areaPts - 1) * 2;
           const intv = (0.48 / (1 + Math.max(0, aObj.cdPts - 1) * 0.20)).toFixed(2);
           badges.push({ text: `💥 Урон лазера: ${st.damage}`, cls: 'bg-rose-600/90 text-white' });
           badges.push({ text: `🛸 Дронов на орбите: ${cnt}`, cls: 'bg-amber-500/95 text-slate-950' });
@@ -1521,8 +1524,12 @@
         areaRate = 0.25;
       } else if (id === 'flash_panic') {
         areaRate = 0.40;
+      } else if (id === 'black_hole') {
+        // Чёрная дыра в 2 раза быстрее прокачивает область за уровень (0.28 * 2 = 0.56)
+        areaRate = 0.56;
       } else if (id === 'orbital_laser') {
-        areaRate = 0.45;
+        // Спутниковый залп УТАУ прокачивает длину в 2.5 раза больше за уровень (0.45 * 2.5 = 1.125)
+        areaRate = 1.125;
       } else if (id === 'acid_juice') {
         // For PoPiPo, Stat 3 (cdPts) increases radius by +35%
         areaRate = 0;

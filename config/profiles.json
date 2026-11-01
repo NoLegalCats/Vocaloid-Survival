@@ -1,0 +1,9 @@
+{
+  "profiles": [
+    {
+      "id": "standard",
+      "name": "Стандарт",
+      "file": "config/balance.json"
+    }
+  ]
+}

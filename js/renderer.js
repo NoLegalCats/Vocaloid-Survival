@@ -709,6 +709,78 @@
       }
     }
 
+    function getPlayerVfxAlpha() {
+      return (typeof state !== 'undefined' && state.playerVfxOpacity !== undefined)
+        ? state.playerVfxOpacity
+        : 0.75;
+    }
+
+    // Отрисовка языков пламени на горящих зомби, боссе и игроке (после подрыва горящей бочки)
+    function drawEntityBurnFlames(ctx, x, y, radius = 18) {
+      ctx.save();
+      const t = (typeof state !== 'undefined' ? state.timeElapsed : 0) * 16;
+      for (let i = -1; i <= 1; i++) {
+        const fx = x + i * (radius * 0.42);
+        const fy = y - radius * 0.2 + Math.sin(t + i * 2) * 3;
+        const fh = radius * 0.65 + Math.cos(t * 1.3 + i) * 4;
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.88)';
+        ctx.beginPath();
+        ctx.moveTo(fx - 6, fy + 6);
+        ctx.lineTo(fx, fy - fh);
+        ctx.lineTo(fx + 6, fy + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(fx, fy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Приборы-генераторы луча на обоих концах Спутникового Залпа «УТАУ»!
+    function drawUtauBeamEmitterDevice(ctx, x, y, beamRadius, isTopEmitter) {
+      ctx.save();
+      ctx.translate(x, y);
+      const podW = Math.max(44, beamRadius * 1.35);
+      const podH = 18;
+      const dir = isTopEmitter ? 1 : -1;
+
+      // Боковые стабилизирующие солнечные крылья спутника УТАУ
+      ctx.fillStyle = '#0284c7';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.6;
+      ctx.fillRect(-podW * 0.95, -6, podW * 0.42, 12);
+      ctx.strokeRect(-podW * 0.95, -6, podW * 0.42, 12);
+      ctx.fillRect(podW * 0.53, -6, podW * 0.42, 12);
+      ctx.strokeRect(podW * 0.53, -6, podW * 0.42, 12);
+
+      // Металлический корпус излучателя
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.roundRect(-podW * 0.5, -podH * 0.5, podW, podH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Энергетические катушки и индикаторы
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(-podW * 0.36, -4, 8, 8);
+      ctx.fillRect(podW * 0.36 - 8, -4, 8, 8);
+
+      // Фокусирующая плазменная линза, генерирующая луч
+      ctx.fillStyle = '#fde047';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, dir * (podH * 0.48), beamRadius * 0.58, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
     function drawPlushieTetoPhotoSprite(ctx, pet) {
       const plushImg = document.getElementById('imgPlushTeto');
       ctx.save();
@@ -732,8 +804,10 @@
 
     // Детализированные 4-винтовые квадрокоптеры (как на 00:06 и 00:08 в референсном видео!)
     function drawOrbitingDrones(ctx) {
+      const vfxAlpha = getPlayerVfxAlpha();
       for (const d of state.orbitDrones) {
         ctx.save();
+        ctx.globalAlpha = vfxAlpha;
         drawSoftGroundShadow(ctx, d.x, d.y + 16, 10, 4.5, 0.36);
         ctx.translate(d.x, d.y - 6);
 
@@ -777,14 +851,16 @@
 
     function drawSpinningLeeksAura(ctx) {
       if (state.spinningLeeks.length === 0) return;
+      const vfxAlpha = getPlayerVfxAlpha();
       for (const l of state.spinningLeeks) {
         ctx.save();
+        ctx.globalAlpha = vfxAlpha;
         ctx.translate(l.x, l.y - 6);
         ctx.rotate(l.angle + state.timeElapsed * 10);
         const s = l.size / 18;
         ctx.scale(s, s);
         // Яркий изумрудно-бирюзовый шлейф-полумесяц от взмаха лука-порея
-        ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
+        ctx.strokeStyle = '#34d399';
         ctx.lineWidth = 4.5;
         ctx.beginPath();
         ctx.arc(0, 0, 17, -0.3, Math.PI * 1.35);
@@ -885,6 +961,7 @@
           drawFourPointStar(ctx, sx, sy, 5.5, '#fde047', 0.3, sa);
         }
       }
+      if (z.burnTimer && z.burnTimer > 0) { drawEntityBurnFlames(ctx, zx, zy, s); }
       // Ледяная корка на замороженных зомби (от Ледникового Шторма Снежной Мику!)
       if (z.chillTimer > 0) {
         ctx.fillStyle = 'rgba(103, 232, 249, 0.32)';
@@ -978,6 +1055,7 @@
         drawStraightBox3D(ctx, bx, hTopY - 2, 0, headW * 0.82, headH * 0.32, 6, '#eab308', '#fef08a', '#090d16', 1.8);
       }
 
+      if (b.burnTimer && b.burnTimer > 0) { drawEntityBurnFlames(ctx, bx, by - walkBob, s * 1.15); }
       if (b.archetype !== 'cyber_riot') {
         const eyeY = hTopY + headH * 0.34;
         ctx.fillStyle = '#090d16';
@@ -1320,6 +1398,7 @@
       for (const pool of state.acidPools) {
         ctx.save();
         if (pool.isHealingZone) {
+          ctx.globalAlpha = getPlayerVfxAlpha();
           // Изумрудная зона исцеления «ПоПиПо» с пакетиками овощного сока и крестиками +HP
           ctx.fillStyle = 'rgba(74, 222, 128, 0.16)';
           ctx.strokeStyle = 'rgba(74, 222, 128, 0.55)';
@@ -1391,6 +1470,7 @@
 
       if (p.shieldTimer > 0) {
         ctx.save();
+        ctx.globalAlpha = getPlayerVfxAlpha();
         ctx.translate(p.x, p.y);
         ctx.fillStyle = 'rgba(103, 232, 249, 0.16)';
         ctx.strokeStyle = '#22d3ee';
@@ -1458,6 +1538,7 @@
         } else if (item.kind === 'turret') {
           const t = item.ref;
           ctx.save();
+          ctx.globalAlpha = getPlayerVfxAlpha();
           drawSoftGroundShadow(ctx, t.x, t.y + 10, 15, 7.5, 0.45);
           ctx.translate(t.x, t.y);
           ctx.fillStyle = '#1e293b';
@@ -1486,7 +1567,7 @@
         } else if (item.kind === 'player') {
           if (p.overdriveTimer > 0) {
             ctx.save();
-            ctx.globalAlpha = 0.90;
+            ctx.globalAlpha = vfxAlpha;
             const otherTwo = ['teto', 'miku', 'neru'].filter(id => id !== selectedSkinId);
             const tbWalk = (Math.abs(p.walkFrame % 1) > 0.001) ? p.walkFrame : (state.timeElapsed * 2.2);
             drawPixelHeroine(ctx, p.x - 46, p.y + 8, otherTwo[0], tbWalk + 0.35, 1.0, 1.35);
@@ -1494,6 +1575,7 @@
             ctx.restore();
           }
           drawPixelHeroine(ctx, p.x, p.y, selectedSkinId, p.walkFrame, 1.15, 0.0);
+          if (p.burnTimer && p.burnTimer > 0) { drawEntityBurnFlames(ctx, p.x, p.y, 20); }
           drawAllEquippedWeapons(ctx, p);
           drawSpinningLeeksAura(ctx);
           drawOrbitingDrones(ctx);
@@ -1502,8 +1584,10 @@
         }
       }
 
-      // 9. ИНДИВИДУАЛЬНАЯ ОТРИСОВКА СНАРЯДОВ ВСЕХ 10 ОРУЖИЙ (Каждое оружие выглядит уникально!)
+      // 9. ИНДИВИДУАЛЬНАЯ ОТРИСОВКА СНАРЯДОВ ВСЕХ 10 ОРУЖИЙ (Базовая непрозрачность 100%, регулируется ползунком!)
+      const vfxAlpha = getPlayerVfxAlpha();
       ctx.save();
+      ctx.globalAlpha = vfxAlpha;
       for (const b of state.bullets) {
         if (b.isBaguetteRocket) {
           // 1. Багетная Базука РПГ-7: летящий запечённый багет с реактивной струёй
@@ -1537,14 +1621,14 @@
           const bw = (b.weaponId === 'dual_sniper' ? 7.5 : 4.5) * (b.beamWidthScale || 1.0);
           ctx.save();
           ctx.strokeStyle = b.color || '#38bdf8';
-          ctx.globalAlpha = 0.45;
+          ctx.globalAlpha = vfxAlpha * 0.65;
           ctx.lineWidth = bw * 2.1;
           ctx.beginPath();
           ctx.moveTo(b.x, b.y);
           ctx.lineTo(b.x - b.vx * 0.065, b.y - b.vy * 0.065);
           ctx.stroke();
 
-          ctx.globalAlpha = 0.90;
+          ctx.globalAlpha = vfxAlpha;
           ctx.lineWidth = bw;
           ctx.stroke();
 
@@ -1557,7 +1641,7 @@
           ctx.save();
           ctx.strokeStyle = '#f43f5e';
           ctx.lineWidth = 5.5;
-          ctx.globalAlpha = 0.85;
+          ctx.globalAlpha = vfxAlpha;
           ctx.beginPath();
           ctx.moveTo(b.x, b.y);
           ctx.lineTo(b.x - b.vx * 0.042, b.y - b.vy * 0.042);
@@ -1597,7 +1681,7 @@
           ctx.save();
           ctx.strokeStyle = b.color || '#fef08a';
           ctx.lineWidth = b.radius * 1.4;
-          ctx.globalAlpha = 0.82;
+          ctx.globalAlpha = vfxAlpha;
           ctx.beginPath();
           ctx.moveTo(b.x, b.y);
           ctx.lineTo(b.x - b.vx * 0.028, b.y - b.vy * 0.028);
@@ -1614,16 +1698,16 @@
       // 10. ВРАЩАЮЩИЙСЯ МЕГА-ЛУЧ «ДИВА» (Точно как на видео 00:10: неоновый бирюзовый + неоновый розовый гипер-лучи с белым ядром и звёздочками!)
       for (const rb of state.rotatingBeams) {
         ctx.save();
-        ctx.globalAlpha = 0.42; // Полупрозрачный Вращающийся Мега-Луч «Дива»
+        ctx.globalAlpha = vfxAlpha; // Базовая непрозрачность 100%, управляется ползунком прозрачности эффектов!
         ctx.translate(p.x, p.y - 4);
         const angles = [
-          { ang: rb.currentAngle, outer: 'rgba(244, 63, 94, 0.28)', mid: 'rgba(255, 42, 133, 0.62)' },
-          { ang: rb.currentAngle + Math.PI / 2, outer: 'rgba(34, 211, 238, 0.28)', mid: 'rgba(0, 242, 254, 0.62)' }
+          { ang: rb.currentAngle, outer: 'rgba(244, 63, 94, 0.55)', mid: '#ff2a85' },
+          { ang: rb.currentAngle + Math.PI / 2, outer: 'rgba(34, 211, 238, 0.55)', mid: '#00f2fe' }
         ];
         for (const item of angles) {
           ctx.save();
           ctx.rotate(item.ang);
-          // Полупрозрачный неоновый ореол
+          // Неоновый ореол
           ctx.strokeStyle = item.outer;
           ctx.lineWidth = rb.beamWidth * 2.5;
           ctx.beginPath();
@@ -1631,7 +1715,7 @@
           ctx.lineTo(rb.beamLength, 0);
           ctx.stroke();
 
-          // Полупрозрачный средний слой луча
+          // Насыщенный средний слой луча (100% база)
           ctx.strokeStyle = item.mid;
           ctx.lineWidth = rb.beamWidth * 1.35;
           ctx.beginPath();
@@ -1639,8 +1723,8 @@
           ctx.lineTo(rb.beamLength, 0);
           ctx.stroke();
 
-          // Полупрозрачное белое центральное ядро луча
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.68)';
+          // Белое центральное ядро луча (100% база)
+          ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = rb.beamWidth * 0.52;
           ctx.beginPath();
           ctx.moveTo(-rb.beamLength, 0);
@@ -1659,9 +1743,12 @@
         ctx.restore();
       }
 
-      // 11. ЗРЕЛИЩНЫЕ ВИЗУАЛЬНЫЕ ЭФФЕКТЫ ВСЕХ 20 СПОСОБНОСТЕЙ И ВЗРЫВОВ (Как на видео 00:08-00:11!)
+      // 11. ЗРЕЛИЩНЫЕ ВИЗУАЛЬНЫЕ ЭФФЕКТЫ ВСЕХ 20 СПОСОБНОСТЕЙ И ВЗРЫВОВ (База 100%, управляется ползунком vfxAlpha!)
       for (const fx of state.visualEffects) {
         const progress = Math.max(0, Math.min(1, 1 - fx.timer / Math.max(0.001, fx.maxTimer)));
+        const isBossOrEnvFx = (fx.type === 'boss_hazard_zone' || fx.type === 'boss_laser_sweep' || fx.type === 'water_splash');
+        ctx.save();
+        ctx.globalAlpha = isBossOrEnvFx ? 1.0 : vfxAlpha;
 
         if (fx.type === 'hit_star_spark') {
           drawFourPointStar(ctx, fx.x, fx.y, fx.size * (1 - progress * 0.4), fx.color || '#67e8f9', 0.22, progress * 1.5);
@@ -1801,7 +1888,7 @@
         } else if (fx.type === 'shockwave_ring') {
           ctx.save();
           const curR = fx.maxRadius * progress;
-          ctx.globalAlpha = Math.max(0, 1 - progress);
+          ctx.globalAlpha = (isBossOrEnvFx ? 1.0 : vfxAlpha) * Math.max(0, 1 - progress);
           ctx.strokeStyle = fx.color;
           ctx.lineWidth = 4.5 * (1 - progress);
           ctx.beginPath();
@@ -1823,7 +1910,7 @@
         } else if (fx.type === 'laser_line') {
           // Зигзагообразная цепная молния Телефона Неро с бело-золотым свечением!
           ctx.save();
-          ctx.globalAlpha = Math.max(0, 1 - progress * 0.7);
+          ctx.globalAlpha = vfxAlpha * Math.max(0, 1 - progress * 0.7);
           const midX = (fx.x1 + fx.x2) * 0.5 + (Math.random() - 0.5) * 22;
           const midY = (fx.y1 + fx.y2) * 0.5 + (Math.random() - 0.5) * 22;
           ctx.strokeStyle = fx.color || '#facc15';
@@ -1846,25 +1933,23 @@
           const halfLen = bLen * 0.5;
           const r = fx.radius || 54;
           ctx.save();
+          ctx.globalAlpha = vfxAlpha;
           const beamGrad = ctx.createLinearGradient(fx.x - r, fx.y, fx.x + r, fx.y);
           beamGrad.addColorStop(0, 'rgba(244, 63, 94, 0)');
-          beamGrad.addColorStop(0.25, 'rgba(244, 63, 94, 0.55)');
-          beamGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.92)');
-          beamGrad.addColorStop(0.75, 'rgba(244, 63, 94, 0.55)');
+          beamGrad.addColorStop(0.20, 'rgba(244, 63, 94, 0.85)');
+          beamGrad.addColorStop(0.5, 'rgba(255, 255, 255, 1.0)');
+          beamGrad.addColorStop(0.80, 'rgba(244, 63, 94, 0.85)');
           beamGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
           ctx.fillStyle = beamGrad;
           ctx.fillRect(fx.x - r, fx.y - halfLen, r * 2, bLen);
 
-          // Спутниковые кольца захвата цели на концах луча УТАУ
-          ctx.strokeStyle = '#fde047';
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.ellipse(fx.x, fx.y, r * 0.85, 16, 0, 0, Math.PI * 2);
-          ctx.stroke();
+          // Приборы-излучатели Спутникового Залпа «УТАУ» на обоих концах луча!
+          drawUtauBeamEmitterDevice(ctx, fx.x, fx.y - halfLen, r, true);
+          drawUtauBeamEmitterDevice(ctx, fx.x, fx.y + halfLen, r, false);
           ctx.restore();
         } else if (fx.type === 'drill_vortex') {
           ctx.save();
-          ctx.globalAlpha = 0.65;
+          ctx.globalAlpha = vfxAlpha;
           ctx.translate(state.player.x, state.player.y);
           const numDrills = fx.drillCount || 2;
           const curRad = fx.radius * (0.35 + 0.65 * Math.sin(progress * Math.PI));
@@ -2067,6 +2152,7 @@
           ctx.strokeRect(-hw * 0.65, -12, hw * 1.3, 42);
           ctx.restore();
         }
+        ctx.restore();
       }
 
       // 12. Снаряды врагов (с чёткой красной обводкой!)

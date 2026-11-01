@@ -24,7 +24,12 @@
     "dashBaseDurationSec": 0.2,
     "dashMaxDurationSec": 2.0,
     "dashDurationBonusPerLevelSec": 0.05,
-    "minUnbanishedPoolSize": 5
+    "minUnbanishedPoolSize": 5,
+    "defaultVfxOpacityPct": 75,
+    "carExplosionZombieBossDamage": 2500,
+    "carExplosionPlayerDamage": 200,
+    "barrelBurnZombieBossDurationSec": 10.0,
+    "barrelBurnPlayerDurationSec": 3.0
   },
   "kilometerScaling": {
     "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",
@@ -449,9 +454,10 @@
         "baseFireInterval": 0.48,
         "customStatLabels": [
           "💥 Урон лазерного луча +30%",
-          "🛸 Кол-во дронов (+1 на орбиту)",
+          "🛸 Кол-во дронов (+2 на орбиту за ур.)",
           "⚡ Скорострельность лазеров +20%"
-        ]
+        ],
+        "dronesPerLevel": 2
       }
     },
     "twin_mega_beam": {
@@ -645,9 +651,10 @@
         "cdMultiplierPerPoint": 0.9,
         "customStatLabels": [
           "💥 Фокусированный урон +50%",
-          "📐 Вертикальная длина +45% и жизнь +3.0с",
+          "📐 Вертикальная длина +112.5% и жизнь +3.0с",
           "☄️ +1 колонна плазмы и КД -10%"
-        ]
+        ],
+        "lengthRatePerPoint": 1.125
       }
     },
     "napalm_ring": {
@@ -697,13 +704,13 @@
       "baseDamage": 2500,
       "upgradeScaling": {
         "dmgRatePerPoint": 0.35,
-        "areaRatePerPoint": 0.28,
+        "areaRatePerPoint": 0.56,
         "cdMultiplierPerPoint": 0.9,
         "baseRadius": 660,
         "duration": 2.6,
         "customStatLabels": [
           "💥 Урон сверхновой при взрыве +35%",
-          "🕳️ Радиус захвата улицы +28%",
+          "🕳️ Радиус захвата улицы +56%",
           "⚡ Снижение КД сингулярности -10%"
         ]
       }

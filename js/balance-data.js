@@ -27,7 +27,12 @@ window.DEFAULT_BALANCE_CONFIG = {
     "dashBaseDurationSec": 0.2,
     "dashMaxDurationSec": 2.0,
     "dashDurationBonusPerLevelSec": 0.05,
-    "minUnbanishedPoolSize": 5
+    "minUnbanishedPoolSize": 5,
+    "defaultVfxOpacityPct": 75,
+    "carExplosionZombieBossDamage": 2500,
+    "carExplosionPlayerDamage": 200,
+    "barrelBurnZombieBossDurationSec": 10.0,
+    "barrelBurnPlayerDurationSec": 3.0
   },
   "kilometerScaling": {
     "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",
@@ -452,9 +457,10 @@ window.DEFAULT_BALANCE_CONFIG = {
         "baseFireInterval": 0.48,
         "customStatLabels": [
           "💥 Урон лазерного луча +30%",
-          "🛸 Кол-во дронов (+1 на орбиту)",
+          "🛸 Кол-во дронов (+2 на орбиту за ур.)",
           "⚡ Скорострельность лазеров +20%"
-        ]
+        ],
+        "dronesPerLevel": 2
       }
     },
     "twin_mega_beam": {
@@ -648,9 +654,10 @@ window.DEFAULT_BALANCE_CONFIG = {
         "cdMultiplierPerPoint": 0.9,
         "customStatLabels": [
           "💥 Фокусированный урон +50%",
-          "📐 Вертикальная длина +45% и жизнь +3.0с",
+          "📐 Вертикальная длина +112.5% и жизнь +3.0с",
           "☄️ +1 колонна плазмы и КД -10%"
-        ]
+        ],
+        "lengthRatePerPoint": 1.125
       }
     },
     "napalm_ring": {
@@ -700,13 +707,13 @@ window.DEFAULT_BALANCE_CONFIG = {
       "baseDamage": 2500,
       "upgradeScaling": {
         "dmgRatePerPoint": 0.35,
-        "areaRatePerPoint": 0.28,
+        "areaRatePerPoint": 0.56,
         "cdMultiplierPerPoint": 0.9,
         "baseRadius": 660,
         "duration": 2.6,
         "customStatLabels": [
           "💥 Урон сверхновой при взрыве +35%",
-          "🕳️ Радиус захвата улицы +28%",
+          "🕳️ Радиус захвата улицы +56%",
           "⚡ Снижение КД сингулярности -10%"
         ]
       }
@@ -1055,17 +1062,154 @@ function applyBalanceConfigToPools(cfg) {
 }
 
 async function loadExternalBalanceJson() {
+  window.CUSTOM_CONFIG_PROFILES = window.CUSTOM_CONFIG_PROFILES || {};
+  window.ACTIVE_CONFIG_PROFILE_NAME = 'Стандарт';
+  window.IS_CUSTOM_CONFIG_ACTIVE = false;
+
+  // 1. Считываем сохранённые пользовательские профили из localStorage
+  try {
+    const rawSaved = localStorage.getItem('vocaloid_custom_configs_v1');
+    if (rawSaved) {
+      const parsed = JSON.parse(rawSaved);
+      if (parsed && typeof parsed === 'object') {
+        Object.assign(window.CUSTOM_CONFIG_PROFILES, parsed);
+      }
+    }
+  } catch (e) {}
+
+  // 2. Считываем стандартный config/balance.json и все файлы из папки config/ (через profiles.json и авто-поиск)
   try {
     const res = await fetch('config/balance.json', { cache: 'no-store' });
     if (res.ok) {
       const externalCfg = await res.json();
+      window.DEFAULT_BALANCE_CONFIG = JSON.parse(JSON.stringify(externalCfg));
       applyBalanceConfigToPools(externalCfg);
-      if (typeof populateArsenalCatalog === 'function') populateArsenalCatalog();
-      console.log('Loaded config/balance.json successfully.');
+    } else {
+      applyBalanceConfigToPools(window.DEFAULT_BALANCE_CONFIG);
     }
   } catch (e) {
-    // Работает через file:// — используем встроенный DEFAULT_BALANCE_CONFIG
     applyBalanceConfigToPools(window.DEFAULT_BALANCE_CONFIG);
+  }
+
+  // Пытаемся считать список файлов из config/profiles.json или листинга папки config/
+  try {
+    const pRes = await fetch('config/profiles.json', { cache: 'no-store' });
+    if (pRes.ok) {
+      const pData = await pRes.json();
+      const list = Array.isArray(pData) ? pData : (pData.profiles || []);
+      for (const entry of list) {
+        const fileUrl = typeof entry === 'string' ? entry : entry.file;
+        const profName = typeof entry === 'string'
+          ? entry.replace(/^config\//, '').replace(/\.json$/i, '')
+          : (entry.name || entry.id);
+        if (!fileUrl || profName === 'Стандарт' || profName === 'balance') continue;
+        try {
+          const cRes = await fetch(fileUrl, { cache: 'no-store' });
+          if (cRes.ok) {
+            const cJson = await cRes.json();
+            window.CUSTOM_CONFIG_PROFILES[profName] = cJson;
+          }
+        } catch (err) {}
+      }
+    }
+  } catch (e) {}
+
+  // Авто-сканирование листинга папки config/ (если запущено через локальный веб-сервер)
+  try {
+    const dirRes = await fetch('config/', { cache: 'no-store' });
+    if (dirRes.ok) {
+      const htmlText = await dirRes.text();
+      const hrefs = [...htmlText.matchAll(/href=["']([^"']+\.json)["']/gi)].map(m => m[1]);
+      for (const h of hrefs) {
+        const cleanName = decodeURIComponent(h.split('/').pop()).replace(/\.json$/i, '');
+        if (cleanName && cleanName !== 'balance' && cleanName !== 'profiles') {
+          try {
+            const fRes = await fetch('config/' + cleanName + '.json', { cache: 'no-store' });
+            if (fRes.ok) {
+              window.CUSTOM_CONFIG_PROFILES[cleanName] = await fRes.json();
+            }
+          } catch (err) {}
+        }
+      }
+    }
+  } catch (e) {}
+
+  // Восстанавливаем последний активный профиль, если был выбран кастомный
+  try {
+    const lastActive = localStorage.getItem('vocaloid_active_profile_name_v1');
+    if (lastActive && lastActive !== 'Стандарт' && window.CUSTOM_CONFIG_PROFILES[lastActive]) {
+      activateConfigProfile(lastActive);
+    } else {
+      activateConfigProfile('Стандарт');
+    }
+  } catch (e) {
+    activateConfigProfile('Стандарт');
+  }
+
+  refreshConfigProfileSelectUI();
+  if (typeof populateArsenalCatalog === 'function') populateArsenalCatalog();
+}
+
+function activateConfigProfile(profileName) {
+  if (!profileName || profileName === 'Стандарт' || profileName === 'standard') {
+    window.ACTIVE_CONFIG_PROFILE_NAME = 'Стандарт';
+    window.IS_CUSTOM_CONFIG_ACTIVE = false;
+    const stdCopy = JSON.parse(JSON.stringify(window.DEFAULT_BALANCE_CONFIG));
+    applyBalanceConfigToPools(stdCopy);
+    if (typeof state !== 'undefined') {
+      state.activeConfigProfile = 'Стандарт';
+      state.isCustomConfig = false;
+    }
+    try { localStorage.setItem('vocaloid_active_profile_name_v1', 'Стандарт'); } catch (e) {}
+  } else if (window.CUSTOM_CONFIG_PROFILES && window.CUSTOM_CONFIG_PROFILES[profileName]) {
+    window.ACTIVE_CONFIG_PROFILE_NAME = profileName;
+    window.IS_CUSTOM_CONFIG_ACTIVE = true;
+    const customCopy = JSON.parse(JSON.stringify(window.CUSTOM_CONFIG_PROFILES[profileName]));
+    applyBalanceConfigToPools(customCopy);
+    if (typeof state !== 'undefined') {
+      state.activeConfigProfile = profileName;
+      state.isCustomConfig = true;
+    }
+    try { localStorage.setItem('vocaloid_active_profile_name_v1', profileName); } catch (e) {}
+  }
+  if (typeof populateArsenalCatalog === 'function') populateArsenalCatalog();
+  refreshConfigProfileSelectUI();
+}
+
+function refreshConfigProfileSelectUI() {
+  const sel = document.getElementById('configProfileSelect');
+  const statusBadge = document.getElementById('activeConfigStatusBadge');
+  if (!sel) return;
+  sel.innerHTML = '';
+
+  const optStd = document.createElement('option');
+  optStd.value = 'Стандарт';
+  optStd.textContent = '📄 Стандарт (config/balance.json)';
+  sel.appendChild(optStd);
+
+  const customNames = Object.keys(window.CUSTOM_CONFIG_PROFILES || {});
+  customNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = `🛠️ Кастом: ${name} (config/${name}.json)`;
+    sel.appendChild(opt);
+  });
+
+  const optNew = document.createElement('option');
+  optNew.value = '__create_new__';
+  optNew.textContent = '➕ Создать новый...';
+  sel.appendChild(optNew);
+
+  sel.value = window.IS_CUSTOM_CONFIG_ACTIVE ? window.ACTIVE_CONFIG_PROFILE_NAME : 'Стандарт';
+
+  if (statusBadge) {
+    if (window.IS_CUSTOM_CONFIG_ACTIVE) {
+      statusBadge.textContent = `КАСТОМ: ${window.ACTIVE_CONFIG_PROFILE_NAME}`;
+      statusBadge.className = 'px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px] uppercase tracking-wider shadow';
+    } else {
+      statusBadge.textContent = 'СТАНДАРТ';
+      statusBadge.className = 'px-2 py-0.5 rounded bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider';
+    }
   }
 }
 

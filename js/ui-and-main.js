@@ -112,6 +112,18 @@
       const modal = document.getElementById('endModal');
       SoundFX.playBoom(0.4, 0.1);
 
+      const customBanner = document.getElementById('endCustomProfileBanner');
+      const isCustom = !!(window.IS_CUSTOM_CONFIG_ACTIVE || state.isCustomConfig);
+      const profName = window.ACTIVE_CONFIG_PROFILE_NAME || state.activeConfigProfile || 'Кастом';
+      if (customBanner) {
+        if (isCustom && profName !== 'Стандарт') {
+          customBanner.textContent = `КАСТОМ: ${profName}`;
+          customBanner.classList.remove('hidden');
+        } else {
+          customBanner.classList.add('hidden');
+        }
+      }
+
       const counts = getTotalItemsCount();
       const kmPassed = +(state.maxDistanceMeters / 1000).toFixed(2);
       const metersPassed = Math.round(state.maxDistanceMeters);
@@ -244,6 +256,315 @@
       });
     }
 
+
+    // =========================================================================
+    // 19. DYNAMIC CUSTOM CONFIG EDITOR, VALIDATOR & VFX OPACITY SLIDER
+    // =========================================================================
+    function syncVfxOpacitySliders(pctValue) {
+      const clamped = Math.max(5, Math.min(100, Math.round(Number(pctValue) || 75)));
+      state.playerVfxOpacity = clamped / 100;
+      const s1 = document.getElementById('vfxOpacitySlider');
+      const l1 = document.getElementById('vfxOpacityLabel');
+      const s2 = document.getElementById('vfxOpacitySliderStart');
+      const l2 = document.getElementById('vfxOpacityLabelStart');
+      if (s1 && Number(s1.value) !== clamped) s1.value = String(clamped);
+      if (l1) l1.textContent = `${clamped}%`;
+      if (s2 && Number(s2.value) !== clamped) s2.value = String(clamped);
+      if (l2) l2.textContent = `${clamped}%`;
+    }
+
+    function openCustomConfigModal(initialProfileName = '') {
+      const modal = document.getElementById('customConfigModal');
+      if (!modal) return;
+      const nameInput = document.getElementById('customConfigNameInput');
+      const previewCode = document.getElementById('customConfigFilePreview');
+      const baseName = (initialProfileName && initialProfileName !== 'Стандарт' && initialProfileName !== '__create_new__')
+        ? initialProfileName
+        : `Мой_Профиль_${Object.keys(window.CUSTOM_CONFIG_PROFILES || {}).length + 1}`;
+      if (nameInput) nameInput.value = baseName;
+      if (previewCode) previewCode.textContent = `config/${baseName}.json`;
+
+      const sourceCfg = (initialProfileName && window.CUSTOM_CONFIG_PROFILES && window.CUSTOM_CONFIG_PROFILES[initialProfileName])
+        ? window.CUSTOM_CONFIG_PROFILES[initialProfileName]
+        : window.DEFAULT_BALANCE_CONFIG;
+
+      buildDynamicConfigEditorFields(sourceCfg, window.DEFAULT_BALANCE_CONFIG);
+      modal.classList.remove('hidden');
+    }
+
+    function getNumericBoundsFromStd(key, stdVal) {
+      const k = String(key).toLowerCase();
+      if (k.includes('chance') || k === 'maxarmor' || k === 'armorbonus' || k === 'armorperkm') {
+        return { min: 0, max: 1, step: 0.01 };
+      }
+      if (k.includes('cooldown') || k.includes('duration') || k.includes('sec')) {
+        return { min: 0.05, max: 600, step: 0.05 };
+      }
+      if (stdVal > 0 && Number.isInteger(stdVal)) {
+        return { min: 0, max: Math.max(999999, stdVal * 100), step: 1 };
+      }
+      return { min: 0, max: Math.max(100000, Math.abs(stdVal) * 100 + 100), step: 0.01 };
+    }
+
+    function buildDynamicConfigEditorFields(currentCfg, stdCfg) {
+      const container = document.getElementById('customConfigDynamicBody');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const sectionTitles = {
+        general: '⚙️ 1. Общие настройки мира, Рывка (Shift) и Разрушений',
+        characters: '🎤 2. Характеристики героинь (Тето, Мику, Неру)',
+        rarities: '🎲 3. Веса и бонусы редкостей прокачки',
+        weapons: '🔫 4. Баланс всех 10 видов Оружия',
+        abilities: '⚡ 5. Баланс всех 20 Способностей',
+        bosses: '👑 6. Масштабирование и архетипы Боссов'
+      };
+
+      const createFieldInput = (pathArr, labelText, curVal, stdVal) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col gap-1 bg-slate-950/90 p-2.5 rounded-xl border border-slate-800';
+        const valType = typeof stdVal;
+        const pathStr = pathArr.join('.');
+
+        if (valType === 'number') {
+          const bounds = getNumericBoundsFromStd(pathArr[pathArr.length - 1], stdVal);
+          wrap.innerHTML = `
+            <div class="flex items-center justify-between gap-1 text-[11px]">
+              <span class="font-bold text-slate-200 truncate" title="${labelText}">${labelText}</span>
+              <span class="text-[10px] text-slate-400 font-mono">Станд: ${stdVal}</span>
+            </div>
+            <input type="number" data-cfg-path="${pathStr}" data-cfg-type="number" data-std-val="${stdVal}"
+              min="${bounds.min}" max="${bounds.max}" step="${bounds.step}" value="${curVal !== undefined ? curVal : stdVal}"
+              class="cfg-dyn-input w-full bg-slate-900 text-amber-300 font-mono text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:border-cyan-400 outline-none" />
+          `;
+        } else if (valType === 'boolean') {
+          const checked = (curVal !== undefined ? curVal : stdVal) ? 'checked' : '';
+          wrap.innerHTML = `
+            <div class="flex items-center justify-between gap-2 text-[11px] h-full">
+              <span class="font-bold text-slate-200">${labelText} <span class="text-[10px] text-slate-400">(Станд: ${stdVal ? 'ВКЛ' : 'ВЫКЛ'})</span></span>
+              <input type="checkbox" data-cfg-path="${pathStr}" data-cfg-type="boolean" ${checked} class="cfg-dyn-input w-4 h-4 accent-cyan-400 cursor-pointer" />
+            </div>
+          `;
+        } else if (valType === 'string' && !pathStr.includes('imageFile') && !pathStr.includes('id') && !pathStr.includes('archetype')) {
+          wrap.innerHTML = `
+            <div class="flex items-center justify-between gap-1 text-[11px]">
+              <span class="font-bold text-slate-200 truncate">${labelText}</span>
+            </div>
+            <input type="text" data-cfg-path="${pathStr}" data-cfg-type="string" data-std-val="${stdVal}" value="${curVal !== undefined ? curVal : stdVal}"
+              class="cfg-dyn-input w-full bg-slate-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:border-cyan-400 outline-none" />
+          `;
+        } else {
+          return null;
+        }
+        return wrap;
+      };
+
+      Object.keys(stdCfg).forEach(secKey => {
+        if (secKey === '_comment') return;
+        const stdSec = stdCfg[secKey];
+        const curSec = (currentCfg && currentCfg[secKey]) || stdSec;
+
+        const secBlock = document.createElement('div');
+        secBlock.className = 'bg-slate-900/80 border border-slate-700/90 rounded-2xl p-4 space-y-3';
+        const title = sectionTitles[secKey] || `📦 ${secKey}`;
+        secBlock.innerHTML = `<h4 class="text-sm sm:text-base font-black text-cyan-300 border-b border-slate-800 pb-2">${title}</h4>`;
+
+        if (secKey === 'general') {
+          const grid = document.createElement('div');
+          grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5';
+          Object.keys(stdSec).forEach(k => {
+            const el = createFieldInput(['general', k], k, curSec[k], stdSec[k]);
+            if (el) grid.appendChild(el);
+          });
+          secBlock.appendChild(grid);
+        } else if (secKey === 'characters' || secKey === 'weapons' || secKey === 'abilities') {
+          const subGrid = document.createElement('div');
+          subGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+          Object.keys(stdSec).forEach(itemId => {
+            const stdItem = stdSec[itemId];
+            const curItem = (curSec && curSec[itemId]) || stdItem;
+            const card = document.createElement('div');
+            card.className = 'p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2';
+            card.innerHTML = `<div class="text-xs font-black text-amber-300">${stdItem.icon || '🔹'} ${stdItem.name || itemId} <span class="text-slate-500 font-mono">(${itemId})</span></div>`;
+            const fieldsWrap = document.createElement('div');
+            fieldsWrap.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2';
+            Object.keys(stdItem).forEach(prop => {
+              const val = stdItem[prop];
+              if (typeof val === 'number' || typeof val === 'boolean' || prop === 'name') {
+                const el = createFieldInput([secKey, itemId, prop], prop, curItem[prop], val);
+                if (el) fieldsWrap.appendChild(el);
+              } else if (prop === 'upgradeScaling' && val && typeof val === 'object') {
+                Object.keys(val).forEach(uProp => {
+                  if (typeof val[uProp] === 'number') {
+                    const el = createFieldInput([secKey, itemId, 'upgradeScaling', uProp], `scale.${uProp}`, curItem.upgradeScaling?.[uProp], val[uProp]);
+                    if (el) fieldsWrap.appendChild(el);
+                  }
+                });
+              }
+            });
+            card.appendChild(fieldsWrap);
+            subGrid.appendChild(card);
+          });
+          secBlock.appendChild(subGrid);
+        } else if (secKey === 'rarities' && Array.isArray(stdSec)) {
+          const grid = document.createElement('div');
+          grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5';
+          stdSec.forEach((rStd, idx) => {
+            const rCur = (Array.isArray(curSec) && curSec[idx]) || rStd;
+            const card = document.createElement('div');
+            card.className = 'p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2';
+            card.innerHTML = `<div class="text-xs font-black text-white">${rStd.emoji || ''} ${rStd.name}</div>`;
+            ['weight', 'levelGain', 'statsCount', 'totalPoints'].forEach(pKey => {
+              if (typeof rStd[pKey] === 'number') {
+                const el = createFieldInput(['rarities', String(idx), pKey], pKey, rCur[pKey], rStd[pKey]);
+                if (el) card.appendChild(el);
+              }
+            });
+            grid.appendChild(card);
+          });
+          secBlock.appendChild(grid);
+        } else if (secKey === 'bosses' && stdSec && typeof stdSec === 'object') {
+          if (stdSec.scaling) {
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5';
+            Object.keys(stdSec.scaling).forEach(k => {
+              if (typeof stdSec.scaling[k] === 'number') {
+                const el = createFieldInput(['bosses', 'scaling', k], k, curSec.scaling?.[k], stdSec.scaling[k]);
+                if (el) grid.appendChild(el);
+              }
+            });
+            secBlock.appendChild(grid);
+          }
+        }
+
+        container.appendChild(secBlock);
+      });
+
+      // Подключаем живую валидацию ко всем полям
+      container.querySelectorAll('.cfg-dyn-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          validateCustomConfigInputs();
+        });
+      });
+      validateCustomConfigInputs();
+    }
+
+    function validateCustomConfigInputs() {
+      const container = document.getElementById('customConfigDynamicBody');
+      const msgEl = document.getElementById('customConfigValidationMsg');
+      if (!container) return true;
+      let allValid = true;
+      let firstError = '';
+
+      container.querySelectorAll('.cfg-dyn-input').forEach(inp => {
+        const cfgType = inp.getAttribute('data-cfg-type');
+        const pathStr = inp.getAttribute('data-cfg-path') || '';
+        if (cfgType === 'number') {
+          const val = Number(inp.value);
+          const minV = inp.min !== '' ? Number(inp.min) : -Infinity;
+          const maxV = inp.max !== '' ? Number(inp.max) : Infinity;
+          if (inp.value === '' || Number.isNaN(val) || !Number.isFinite(val) || val < minV || val > maxV) {
+            allValid = false;
+            inp.classList.add('border-red-500', 'bg-red-950/60');
+            if (!firstError) firstError = `Ошибка в поле "${pathStr}": введите число от ${minV} до ${maxV}`;
+          } else {
+            inp.classList.remove('border-red-500', 'bg-red-950/60');
+          }
+        } else if (cfgType === 'string') {
+          if (!inp.value.trim()) {
+            allValid = false;
+            inp.classList.add('border-red-500', 'bg-red-950/60');
+            if (!firstError) firstError = `Поле "${pathStr}" не может быть пустым`;
+          } else {
+            inp.classList.remove('border-red-500', 'bg-red-950/60');
+          }
+        }
+      });
+
+      if (msgEl) {
+        if (allValid) {
+          msgEl.textContent = '✅ Все значения корректны и соответствуют формату стандартного конфига';
+          msgEl.className = 'text-xs font-bold text-emerald-400';
+        } else {
+          msgEl.textContent = `❌ ${firstError}`;
+          msgEl.className = 'text-xs font-bold text-red-400';
+        }
+      }
+      return allValid;
+    }
+
+    async function saveAndActivateCustomConfigFromModal() {
+      if (!validateCustomConfigInputs()) return;
+      const nameInput = document.getElementById('customConfigNameInput');
+      let rawName = (nameInput ? nameInput.value.trim() : '') || 'Мой_Баланс';
+      rawName = rawName.replace(/[\\/:*?"<>|]/g, '_');
+      if (rawName === 'Стандарт' || rawName.toLowerCase() === 'balance') {
+        rawName = 'Мой_Стандарт';
+      }
+
+      const newCfg = JSON.parse(JSON.stringify(window.DEFAULT_BALANCE_CONFIG));
+      const container = document.getElementById('customConfigDynamicBody');
+      if (container) {
+        container.querySelectorAll('.cfg-dyn-input').forEach(inp => {
+          const pathArr = (inp.getAttribute('data-cfg-path') || '').split('.');
+          const cfgType = inp.getAttribute('data-cfg-type');
+          let target = newCfg;
+          for (let i = 0; i < pathArr.length - 1; i++) {
+            const stepKey = pathArr[i];
+            if (target[stepKey] === undefined) return;
+            target = target[stepKey];
+          }
+          const lastKey = pathArr[pathArr.length - 1];
+          if (cfgType === 'number') target[lastKey] = Number(inp.value);
+          else if (cfgType === 'boolean') target[lastKey] = !!inp.checked;
+          else if (cfgType === 'string') target[lastKey] = inp.value.trim();
+        });
+      }
+
+      newCfg._customProfileName = rawName;
+      window.CUSTOM_CONFIG_PROFILES = window.CUSTOM_CONFIG_PROFILES || {};
+      window.CUSTOM_CONFIG_PROFILES[rawName] = newCfg;
+
+      try {
+        localStorage.setItem('vocaloid_custom_configs_v1', JSON.stringify(window.CUSTOM_CONFIG_PROFILES));
+      } catch (e) {}
+
+      // Сохраняем файл <rawName>.json для папки config/
+      const jsonBlob = new Blob([JSON.stringify(newCfg, null, 2)], { type: 'application/json' });
+      let savedViaPicker = false;
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: `${rawName}.json`,
+            types: [{ description: 'JSON Config File', accept: { 'application/json': ['.json'] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(jsonBlob);
+          await writable.close();
+          savedViaPicker = true;
+        } catch (err) {
+          // Если пользователь закрыл системный диалог или браузер заблокировал — скачиваем автоматически
+        }
+      }
+      if (!savedViaPicker) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(jsonBlob);
+        a.download = `${rawName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      activateConfigProfile(rawName);
+      const modal = document.getElementById('customConfigModal');
+      if (modal) modal.classList.add('hidden');
+      showToast(
+        `🛠️ КАСТОМНЫЙ ПРОФИЛЬ АКТИВИРОВАН: ${rawName}`,
+        `Файл ${rawName}.json сохранён! В статистике забега будет отмечено «Кастом: ${rawName}».`,
+        'border-cyan-400 bg-slate-900/95'
+      );
+    }
+
     let startPreviewLoopId = null;
     function renderStartScreenPreviews() {
       const skins = [
@@ -311,6 +632,81 @@
       }
       setupHighResImageFallbacks();
       loadExternalBalanceJson();
+      syncVfxOpacitySliders(75);
+
+      const vfxS1 = document.getElementById('vfxOpacitySlider');
+      const vfxS2 = document.getElementById('vfxOpacitySliderStart');
+      if (vfxS1) vfxS1.addEventListener('input', e => syncVfxOpacitySliders(e.target.value));
+      if (vfxS2) vfxS2.addEventListener('input', e => syncVfxOpacitySliders(e.target.value));
+
+      const cfgSelect = document.getElementById('configProfileSelect');
+      if (cfgSelect) {
+        cfgSelect.addEventListener('change', e => {
+          const val = e.target.value;
+          if (val === '__create_new__') {
+            openCustomConfigModal('');
+          } else {
+            activateConfigProfile(val);
+          }
+        });
+      }
+      const btnEditCfg = document.getElementById('btnEditCurrentConfig');
+      if (btnEditCfg) {
+        btnEditCfg.addEventListener('click', () => {
+          openCustomConfigModal(window.ACTIVE_CONFIG_PROFILE_NAME || '');
+        });
+      }
+      const btnCloseCfg = document.getElementById('btnCloseCustomConfigModal');
+      if (btnCloseCfg) {
+        btnCloseCfg.addEventListener('click', () => {
+          const m = document.getElementById('customConfigModal');
+          if (m) m.classList.add('hidden');
+          refreshConfigProfileSelectUI();
+        });
+      }
+      const btnResetCfg = document.getElementById('btnResetCustomConfigToStd');
+      if (btnResetCfg) {
+        btnResetCfg.addEventListener('click', () => {
+          buildDynamicConfigEditorFields(window.DEFAULT_BALANCE_CONFIG, window.DEFAULT_BALANCE_CONFIG);
+        });
+      }
+      const btnSaveCfg = document.getElementById('btnSaveAndActivateCustomConfig');
+      if (btnSaveCfg) {
+        btnSaveCfg.addEventListener('click', () => {
+          saveAndActivateCustomConfigFromModal();
+        });
+      }
+      const nameInp = document.getElementById('customConfigNameInput');
+      if (nameInp) {
+        nameInp.addEventListener('input', e => {
+          const prev = document.getElementById('customConfigFilePreview');
+          const clean = (e.target.value.trim() || 'Мой_Баланс').replace(/[\\/:*?"<>|]/g, '_');
+          if (prev) prev.textContent = `config/${clean}.json`;
+        });
+      }
+      const fileInp = document.getElementById('configJsonFileInput');
+      if (fileInp) {
+        fileInp.addEventListener('change', async e => {
+          const files = Array.from(e.target.files || []);
+          let lastLoaded = null;
+          for (const f of files) {
+            try {
+              const txt = await f.text();
+              const parsed = JSON.parse(txt);
+              const pName = parsed._customProfileName || f.name.replace(/\.json$/i, '');
+              if (pName && pName !== 'balance' && pName !== 'profiles') {
+                window.CUSTOM_CONFIG_PROFILES = window.CUSTOM_CONFIG_PROFILES || {};
+                window.CUSTOM_CONFIG_PROFILES[pName] = parsed;
+                lastLoaded = pName;
+              }
+            } catch (err) {}
+          }
+          if (lastLoaded) {
+            try { localStorage.setItem('vocaloid_custom_configs_v1', JSON.stringify(window.CUSTOM_CONFIG_PROFILES)); } catch (err) {}
+            activateConfigProfile(lastLoaded);
+          }
+        });
+      }
       resizeCanvas();
       generateAll30UniqueItemArts();
       populateArsenalCatalog();
@@ -575,7 +971,15 @@
         drawPixelHeroine(sctx, 68, 66, selectedSkinId, 0, 2.0);
         sctx.fillStyle = '#f43f5e';
         sctx.font = '900 13px Inter, sans-serif';
-        sctx.fillText('VOCALOID SURVIVORS: УЛИЦА ЗОМБИ — ИТОГОВАЯ СТАТИСТИКА ЗАБЕГА', 120, 44);
+        sctx.fillText('VOCALOID SURVIVAL 3D: МОСТ НАД ВОДОЙ — ИТОГОВАЯ СТАТИСТИКА ЗАБЕГА', 120, 44);
+        if (window.IS_CUSTOM_CONFIG_ACTIVE && window.ACTIVE_CONFIG_PROFILE_NAME && window.ACTIVE_CONFIG_PROFILE_NAME !== 'Стандарт') {
+          sctx.save();
+          sctx.fillStyle = '#ef4444';
+          sctx.font = '900 28px Inter, sans-serif';
+          sctx.textAlign = 'right';
+          sctx.fillText(`КАСТОМ: ${window.ACTIVE_CONFIG_PROFILE_NAME}`, canvasW - 28, 52);
+          sctx.restore();
+        }
         sctx.fillStyle = '#ffffff';
         sctx.font = '900 26px Inter, sans-serif';
         const mins = String(Math.floor(state.timeElapsed / 60)).padStart(2, '0');

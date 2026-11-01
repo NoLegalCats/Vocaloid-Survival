@@ -73,3 +73,87 @@
     .ba-skew-badge {
       transform: skewX(-10deg);
     }
+
+
+/* =========================================================================
+   ANIMATED ITEM BORDER TIERS FOR LEVELS 40 TO 100+ (EVERY 10 LEVELS)
+   ========================================================================= */
+@keyframes electricPulse40 {
+  0%, 100% { border-color: #38bdf8; box-shadow: 0 0 8px #0284c7, inset 0 0 6px rgba(56, 189, 248, 0.35); }
+  50% { border-color: #e0f2fe; box-shadow: 0 0 16px #38bdf8, 0 0 4px #ffffff, inset 0 0 10px rgba(56, 189, 248, 0.65); }
+}
+.tier-anim-40 {
+  background: linear-gradient(135deg, #082f49 0%, #0f172a 100%) !important;
+  border: 2px solid #38bdf8 !important;
+  animation: electricPulse40 1.2s infinite ease-in-out;
+}
+
+@keyframes plasmaPulse50 {
+  0%, 100% { border-color: #10b981; box-shadow: 0 0 10px #10b981, inset 0 0 8px rgba(16, 185, 129, 0.4); }
+  50% { border-color: #d946ef; box-shadow: 0 0 18px #d946ef, inset 0 0 12px rgba(217, 70, 239, 0.55); }
+}
+.tier-anim-50 {
+  background: linear-gradient(135deg, #064e3b 0%, #3b0764 100%) !important;
+  border: 2px solid #34d399 !important;
+  animation: plasmaPulse50 1.4s infinite ease-in-out;
+}
+
+@keyframes cryoShimmer60 {
+  0%, 100% { border-color: #67e8f9; box-shadow: 0 0 12px #06b6d4, inset 0 0 10px rgba(103, 232, 249, 0.45); filter: brightness(1); }
+  50% { border-color: #ffffff; box-shadow: 0 0 22px #a5f3fc, 0 0 8px #ffffff, inset 0 0 14px rgba(255, 255, 255, 0.75); filter: brightness(1.15); }
+}
+.tier-anim-60 {
+  background: linear-gradient(135deg, #083344 0%, #1e1b4b 50%, #164e63 100%) !important;
+  border: 2px solid #a5f3fc !important;
+  animation: cryoShimmer60 1.1s infinite ease-in-out;
+}
+
+@keyframes hellfireBurn70 {
+  0% { border-color: #ef4444; box-shadow: 0 -2px 14px #ef4444, 0 0 8px #dc2626, inset 0 0 10px rgba(239, 68, 68, 0.6); }
+  33% { border-color: #f97316; box-shadow: 0 -4px 20px #f97316, 0 0 12px #ea580c, inset 0 0 14px rgba(249, 115, 22, 0.75); }
+  66% { border-color: #fde047; box-shadow: 0 -5px 24px #facc15, 0 0 16px #f97316, inset 0 0 16px rgba(250, 204, 21, 0.85); }
+  100% { border-color: #ef4444; box-shadow: 0 -2px 14px #ef4444, 0 0 8px #dc2626, inset 0 0 10px rgba(239, 68, 68, 0.6); }
+}
+.tier-anim-70 {
+  background: linear-gradient(180deg, #450a0a 0%, #7c2d12 60%, #9a3412 100%) !important;
+  border: 2px solid #f97316 !important;
+  animation: hellfireBurn70 0.75s infinite linear;
+}
+
+@keyframes voidSingularity80 {
+  0%, 100% { border-color: #c084fc; box-shadow: 0 0 15px #9333ea, 0 0 25px #4c1d95, inset 0 0 14px rgba(192, 132, 252, 0.6); }
+  50% { border-color: #fbbf24; box-shadow: 0 0 24px #e879f9, 0 0 10px #fde047, inset 0 0 18px rgba(251, 191, 36, 0.7); }
+}
+.tier-anim-80 {
+  background: radial-gradient(circle at center, #090d16 20%, #3b0764 75%, #581c87 100%) !important;
+  border: 2px solid #e879f9 !important;
+  animation: voidSingularity80 1.0s infinite ease-in-out;
+}
+
+@keyframes rainbowSpectrum90 {
+  0%   { border-color: #ff0055; box-shadow: 0 0 16px #ff0055, inset 0 0 10px rgba(255, 0, 85, 0.5); }
+  16%  { border-color: #ff9900; box-shadow: 0 0 16px #ff9900, inset 0 0 10px rgba(255, 153, 0, 0.5); }
+  33%  { border-color: #ffee00; box-shadow: 0 0 16px #ffee00, inset 0 0 10px rgba(255, 238, 0, 0.5); }
+  50%  { border-color: #00ff66; box-shadow: 0 0 16px #00ff66, inset 0 0 10px rgba(0, 255, 102, 0.5); }
+  66%  { border-color: #00ccff; box-shadow: 0 0 16px #00ccff, inset 0 0 10px rgba(0, 204, 255, 0.5); }
+  83%  { border-color: #cc00ff; box-shadow: 0 0 16px #cc00ff, inset 0 0 10px rgba(204, 0, 255, 0.5); }
+  100% { border-color: #ff0055; box-shadow: 0 0 16px #ff0055, inset 0 0 10px rgba(255, 0, 85, 0.5); }
+}
+.tier-anim-90 {
+  background: linear-gradient(135deg, #1e1b4b 0%, #31102f 50%, #0f172a 100%) !important;
+  border: 2px solid #ff0055 !important;
+  animation: rainbowSpectrum90 1.2s infinite linear;
+}
+
+@keyframes transcendentGod100 {
+  0%   { border-color: #ffffff; box-shadow: 0 0 22px #ff0055, 0 -4px 20px #fde047, inset 0 0 16px rgba(255, 255, 255, 0.85); transform: translateY(0px); }
+  25%  { border-color: #fde047; box-shadow: 0 0 26px #ff9900, 0 -6px 26px #00ff88, inset 0 0 18px rgba(253, 224, 71, 0.85); transform: translateY(-1px); }
+  50%  { border-color: #00f2fe; box-shadow: 0 0 28px #00f2fe, 0 -6px 28px #ff00cc, inset 0 0 20px rgba(0, 242, 254, 0.9); transform: translateY(0px); }
+  75%  { border-color: #e879f9; box-shadow: 0 0 26px #a855f7, 0 -5px 24px #fde047, inset 0 0 18px rgba(232, 121, 249, 0.85); transform: translateY(-1px); }
+  100% { border-color: #ffffff; box-shadow: 0 0 22px #ff0055, 0 -4px 20px #fde047, inset 0 0 16px rgba(255, 255, 255, 0.85); transform: translateY(0px); }
+}
+.tier-anim-100 {
+  background: linear-gradient(135deg, #450a0a 0%, #3b0764 35%, #064e3b 70%, #713f12 100%) !important;
+  border: 2.5px solid #ffffff !important;
+  animation: transcendentGod100 0.85s infinite linear;
+}
