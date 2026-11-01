@@ -911,11 +911,13 @@
       const bx = Math.round(b.x);
       const by = Math.round(b.y);
       const s = b.size;
-      const walkBob = Math.abs(Math.sin(state.timeElapsed * 5)) * 3.5;
+      const leapZ = b.zOffset || 0;
+      const walkBob = (Math.abs(Math.sin(state.timeElapsed * 5)) * 3.5) + leapZ;
       const stride = Math.sin(state.timeElapsed * 5) * 4;
 
-      // 1. Центрированная тень и тактическое кольцо угрозы прямо под Боссом
-      drawSoftGroundShadow(ctx, bx, by + s * 0.65, s * 1.25, s * 0.58, 0.65);
+      // 1. Центрированная тень на асфальте (сжимается при прыжке босса в воздухе!)
+      const shadowScale = Math.max(0.45, 1 - leapZ / 220);
+      drawSoftGroundShadow(ctx, bx, by + s * 0.65, s * 1.25 * shadowScale, s * 0.58 * shadowScale, 0.65);
 
       ctx.strokeStyle = b.enraged ? '#ef4444' : (b.accentColor || '#facc15');
       ctx.lineWidth = b.enraged ? 4.5 : 3;
@@ -1298,28 +1300,6 @@
         ctx.textAlign = 'center';
         ctx.fillText(`⛔ ПРОХОД ЗАБЛОКИРОВАН: ПОБЕДИТЕ БОССА ${state.boss.kmNumber} КМ! ⛔`, canvasWidth / 2, barrierY + 44);
 
-        if (state.boss.bottomBarrierLocked && state.boss.bottomBarrierY !== undefined) {
-          const botY = state.boss.bottomBarrierY;
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
-          ctx.fillRect(roadLeft, botY - 34, roadWidth, 60);
-          ctx.fillStyle = '#0f172a';
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 3;
-          ctx.fillRect(roadLeft - 4, botY - 12, roadWidth + 8, barH);
-          ctx.strokeRect(roadLeft - 4, botY - 12, roadWidth + 8, barH);
-          ctx.fillStyle = '#eab308';
-          for (let sx = roadLeft + 10; sx < roadRight - 18; sx += 24) {
-            ctx.fillRect(sx, botY - 9, 12, barH - 6);
-          }
-          ctx.fillStyle = blink ? '#ef4444' : '#7f1d1d';
-          ctx.beginPath();
-          ctx.arc(roadLeft + 12, botY - 18, 8, 0, Math.PI * 2);
-          ctx.arc(roadRight - 12, botY - 18, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#fde047';
-          ctx.font = 'bold 12px Inter, sans-serif';
-          ctx.fillText(`🔒 ОТСТУПЛЕНИЕ ЗАБЛОКИРОВАНО: АРЕНА БОССА ${state.boss.kmNumber} КМ ЗАПЕРТА! 🔒`, canvasWidth / 2, botY - 20);
-        }
         ctx.textAlign = 'left';
       }
 
@@ -1618,15 +1598,16 @@
       // 10. ВРАЩАЮЩИЙСЯ МЕГА-ЛУЧ «ДИВА» (Точно как на видео 00:10: неоновый бирюзовый + неоновый розовый гипер-лучи с белым ядром и звёздочками!)
       for (const rb of state.rotatingBeams) {
         ctx.save();
+        ctx.globalAlpha = 0.42; // Полупрозрачный Вращающийся Мега-Луч «Дива»
         ctx.translate(p.x, p.y - 4);
         const angles = [
-          { ang: rb.currentAngle, outer: 'rgba(244, 63, 94, 0.38)', mid: '#ff2a85' },
-          { ang: rb.currentAngle + Math.PI / 2, outer: 'rgba(34, 211, 238, 0.38)', mid: '#00f2fe' }
+          { ang: rb.currentAngle, outer: 'rgba(244, 63, 94, 0.28)', mid: 'rgba(255, 42, 133, 0.62)' },
+          { ang: rb.currentAngle + Math.PI / 2, outer: 'rgba(34, 211, 238, 0.28)', mid: 'rgba(0, 242, 254, 0.62)' }
         ];
         for (const item of angles) {
           ctx.save();
           ctx.rotate(item.ang);
-          // Широкий неоновый ореол
+          // Полупрозрачный неоновый ореол
           ctx.strokeStyle = item.outer;
           ctx.lineWidth = rb.beamWidth * 2.5;
           ctx.beginPath();
@@ -1634,7 +1615,7 @@
           ctx.lineTo(rb.beamLength, 0);
           ctx.stroke();
 
-          // Насыщенный средний слой луча
+          // Полупрозрачный средний слой луча
           ctx.strokeStyle = item.mid;
           ctx.lineWidth = rb.beamWidth * 1.35;
           ctx.beginPath();
@@ -1642,8 +1623,8 @@
           ctx.lineTo(rb.beamLength, 0);
           ctx.stroke();
 
-          // Ослепительно-белое центральное ядро луча
-          ctx.strokeStyle = '#ffffff';
+          // Полупрозрачное белое центральное ядро луча
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.68)';
           ctx.lineWidth = rb.beamWidth * 0.52;
           ctx.beginPath();
           ctx.moveTo(-rb.beamLength, 0);

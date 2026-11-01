@@ -192,8 +192,36 @@
     <!-- Floating Milestone Toast Container -->
     <div id="toastContainer" class="pointer-events-none absolute top-36 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 w-full max-w-md px-3"></div>
 
-    <!-- BOTTOM RARITY & STAT UPGRADE FEED (Shows exact rolled rarity & stats at bottom of screen!) -->
-    <div id="bottomUpgradeFeed" class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 z-40 flex flex-col-reverse items-center gap-2 w-[94%] max-w-xl"></div>
+    <!-- BOTTOM RARITY & STAT UPGRADE FEED (Positioned above the bottom HP & Dash HUD!) -->
+    <div id="bottomUpgradeFeed" class="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 z-40 flex flex-col-reverse items-center gap-2 w-[94%] max-w-xl"></div>
+
+    <!-- BOTTOM-CENTER PLAYER HP BAR & CIRCULAR DASH COOLDOWN INDICATOR (To the right of HP bar!) -->
+    <div id="bottomPlayerHud" class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-slate-950/90 border border-slate-700/90 shadow-[0_0_26px_rgba(0,0,0,0.85)] backdrop-blur-md">
+      <!-- Centered Character HP Bar + Level Scaling Info -->
+      <div class="flex flex-col items-center gap-1">
+        <div class="relative w-56 sm:w-72 md:w-80 h-5 bg-slate-900 rounded-full overflow-hidden border-2 border-rose-500/85 shadow-inner">
+          <div id="bottomHpBar" class="h-full bg-gradient-to-r from-rose-600 via-red-500 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+          <div id="bottomHpText" class="absolute inset-0 flex items-center justify-center text-[11px] sm:text-xs font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] tracking-wide">
+            ❤️ HP: 200 / 200
+          </div>
+        </div>
+        <div id="bottomStatsSubtext" class="text-[9px] sm:text-[10px] font-bold text-cyan-200/90 tracking-tight truncate max-w-[320px]">
+          УР.1: Скор. +0% • Деш +0% • Неуязв. 0.50с • КД 1.00с
+        </div>
+      </div>
+
+      <!-- Circular Dash Cooldown Indicator to the right of the HP bar -->
+      <button id="dashCircleWidget" type="button" title="Рывок (Shift): 0.5с неуязвимости (+10%/ур.), КД 1с (-10%/ур.), длина +10%/ур." class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-900/95 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95 transition cursor-pointer flex-shrink-0">
+        <svg class="w-full h-full -rotate-90 p-0.5" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="#1e293b" stroke-width="4.5"></circle>
+          <circle id="dashCircleArc" cx="24" cy="24" r="20" fill="none" stroke="#22d3ee" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center leading-none pointer-events-none">
+          <span class="text-[11px] sm:text-xs">⚡</span>
+          <span id="dashCircleText" class="text-[8px] sm:text-[9px] font-black text-cyan-200 mt-0.5">SHIFT</span>
+        </div>
+      </button>
+    </div>
 
     <!-- Controls & Rarity Legend Hint -->
     <div id="controlsHint" class="hidden pointer-events-none absolute bottom-2 left-2 z-20 bg-slate-900/85 border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-300 backdrop-blur-sm space-y-0.5 hidden lg:block">
@@ -245,7 +273,7 @@
               </div>
             </div>
             <div class="p-3 text-[11px] text-slate-200 space-y-1">
-              <div>💥 <span class="font-bold text-rose-300">Урон (+45% в конце):</span> ручное оружие (кроме Лука-Порея и Рельсотрона) и взрывы (Плюшка Тето, Бомбардировка, Метеориты, УТАУ, Катюша)</div>
+              <div>💥 <span class="font-bold text-rose-300">Урон (+200% в конце):</span> ручное оружие (кроме Лука-Порея и Рельсотрона) и взрывы (Плюшка Тето, Бомбардировка, Метеориты, УТАУ, Катюша)</div>
               <div>📐 <span class="font-bold text-amber-300">Масштаб взрывов:</span> <b>+100% к области взрывов</b> (накладывается в конце)</div>
               <div>🎲 <span class="font-bold text-indigo-300">Старт:</span> 5 рероллов (+5 за каждого босса)</div>
             </div>

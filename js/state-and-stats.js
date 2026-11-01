@@ -42,12 +42,12 @@
         regenPerSec: 0,
         startRerolls: 5,
         rerollsPerBoss: 5,
-        handheldWeaponDmgMult: 1.45, // +45% to handheld weapons (except leek & railgun)
-        explosionDmgMult: 1.45,      // +45% to explosions (Plush Teto, Bombardment, Meteors, UTAU, Katyusha)
+        handheldWeaponDmgMult: 3.00, // +200% to handheld weapons (except leek & railgun)
+        explosionDmgMult: 3.00,      // +200% to explosions (Plush Teto, Bombardment, Meteors, UTAU, Katyusha)
         explosionAreaMult: 2.00,     // +100% to explosion area
         cutinImgId: 'imgCutinTeto',
         quotes: [
-          'Тето: «Ахаха! Ручное оружие и взрывы +45% урона и +100% площади взрывов!»',
+          'Тето: «Ахаха! Ручное оружие и взрывы +200% урона и +100% площади взрывов!»',
           'Тето: «Мои Плюшки и Катюша накрывают всю улицу!»',
           'Тето: «С каждым километром веселье только начинается!»'
         ]
@@ -321,7 +321,7 @@
             const aCnt = 1 + (afterState.areaPts - 1) * 2;
             return `🤖 Турелей за спавн: ${bCnt} ➔ ${aCnt} (+${aCnt - bCnt})`;
           } else {
-            const baseR = itemId === 'bass_shockwave' ? 420 : (itemId === 'black_hole' ? 660 : (itemId === 'holo_shield' ? 260 : 130));
+            const baseR = itemId === 'bass_shockwave' ? 210 : (itemId === 'black_hole' ? 660 : (itemId === 'holo_shield' ? 260 : 130));
             const bR = Math.round(baseR * bStats.areaScale);
             const aR = Math.round(baseR * aStats.areaScale);
             return `📐 Размер/Радиус: ${bR}px ➔ ${aR}px (+${aR - bR}px)`;
@@ -378,8 +378,8 @@
           } else if (itemId === 'acid_juice') {
             const bP = 1 + (beforeState.cdPts - 1);
             const aP = 1 + (afterState.cdPts - 1);
-            const bRad = Math.round(124 * (1 + (beforeState.cdPts - 1) * 0.35));
-            const aRad = Math.round(124 * (1 + (afterState.cdPts - 1) * 0.35));
+            const bRad = Math.round(62 * (1 + (beforeState.cdPts - 1) * 0.35));
+            const aRad = Math.round(62 * (1 + (afterState.cdPts - 1) * 0.35));
             return `🟢 Луж: ${bP} ➔ ${aP} • Радиус: ${bRad}px ➔ ${aRad}px`;
           } else if (itemId === 'holo_shield') {
             const bS = (4.0 + (beforeState.cdPts - 1) * 1.0).toFixed(1);
@@ -518,11 +518,17 @@
       const available = [...candidates];
       const chosen = [];
       let safety = 0;
+      const isNeru = selectedSkinId === 'neru';
+      const neruRarityMult = isNeru ? (1 + (SKINS.neru?.highRarityBonusChance || 0.50)) : 1.0;
       while (chosen.length < count && available.length > 0 && safety < 2000) {
         safety++;
         const idx = Math.floor(Math.random() * available.length);
         const candidate = available[idx];
-        const keepChance = getItemDropChance(candidate.id);
+        const baseChance = getItemDropChance(candidate.id);
+        // У Неру модификатор редкости (+50%) повышает шанс выпадения редких/необычных предметов и при обычном выборе, и при реролле!
+        const keepChance = isNeru
+          ? (baseChance < 0.75 ? Math.min(1.0, baseChance * neruRarityMult) : baseChance * 0.78)
+          : baseChance;
         if (Math.random() < keepChance) {
           chosen.push(candidate);
           available.splice(idx, 1);
@@ -1136,7 +1142,7 @@
         if (id === 'acid_juice') {
           const heal = 10 + Math.max(0, aObj.dmgPts - 1) * 5;
           const dur = (5.0 + Math.max(0, aObj.areaPts - 1) * 2.0).toFixed(1);
-          const rad = Math.round(124 * st.areaScale);
+          const rad = Math.round(62 * st.areaScale);
           badges.push({ text: `💚 Лечение: ${heal} HP/с`, cls: 'bg-emerald-500/95 text-slate-950' });
           badges.push({ text: `🟢 Луж: ${1 + Math.max(0, aObj.cdPts - 1)} • Радиус: ${rad}px`, cls: 'bg-amber-500/95 text-slate-950' });
           badges.push({ text: `⏱️ Длит.: ${dur}с • КД: ${st.cooldown.toFixed(1)}с`, cls: 'bg-cyan-400/95 text-slate-950' });
@@ -1188,7 +1194,7 @@
           badges.push({ text: `🤖 Турелей: ${cnt} • Жизнь: ${life}с`, cls: 'bg-amber-500/95 text-slate-950' });
           badges.push({ text: `⚡ КД: ${st.cooldown.toFixed(2)}с`, cls: 'bg-cyan-400/95 text-slate-950' });
         } else {
-          const baseR = id === 'bass_shockwave' ? 420 : (id === 'black_hole' ? 660 : 135);
+          const baseR = id === 'bass_shockwave' ? 210 : (id === 'black_hole' ? 660 : 135);
           const rad = Math.round(baseR * st.areaScale);
           badges.push({ text: `💥 Урон: ${st.damage}`, cls: 'bg-rose-600/90 text-white' });
           badges.push({ text: `📐 Область/Радиус: ${rad}px (×${st.areaScale.toFixed(2)})`, cls: 'bg-amber-500/95 text-slate-950' });
@@ -1421,9 +1427,9 @@
 
       // Apply character modifiers AT THE VERY END
       if (selectedSkinId === 'teto') {
-        // Teto: +45% damage to handheld weapons EXCEPT leek_blaster and plasma_rail
+        // Teto: +200% damage to handheld weapons EXCEPT leek_blaster and plasma_rail
         if (!def.isOrbitWeapon && def.id !== 'leek_blaster' && def.id !== 'plasma_rail') {
-          rawDamage *= 1.45;
+          rawDamage *= (SKINS.teto.handheldWeaponDmgMult || 3.00);
         }
         if (def.explosiveRadius) {
           explosionAreaScale *= 2.00;
@@ -1548,10 +1554,10 @@
 
       // Apply character modifiers AT THE VERY END
       if (selectedSkinId === 'teto') {
-        // Teto: +45% damage and +100% area to explosive abilities (Plush Teto, Bombardment, Meteors, UTAU, Katyusha)
+        // Teto: +200% damage and +100% area to explosive abilities (Plush Teto, Bombardment, Meteors, UTAU, Katyusha)
         if (TETO_EXPLOSIVE_ABILITIES.has(id)) {
-          rawDamage *= 1.45;
-          areaScale *= 2.00;
+          rawDamage *= (SKINS.teto.explosionDmgMult || 3.00);
+          areaScale *= (SKINS.teto.explosionAreaMult || 2.00);
         }
       } else if (selectedSkinId === 'miku') {
         // Miku: +100% damage to Giant Drills (drill_tornado) applied at the end
@@ -1572,4 +1578,24 @@
       const cooldown = Math.max(minCd, rawCooldown);
 
       return { damage, areaScale, cooldown, level: aObj.level };
+    }
+
+
+    // За каждый уровень персонаж получает:
+    // +5% к скорости перемещения, +10% к длине деша, -10% КД деша и +10% к времени неуязвимости Деша!
+    function getPlayerLevelBonuses() {
+      const lvlCount = Math.max(0, (state.level || 1) - 1);
+      const speedMult = 1 + lvlCount * 0.05;
+      const dashLengthMult = 1 + lvlCount * 0.10;
+      const dashDistance = 155 * dashLengthMult;
+      const dashCooldown = Math.max(0.12, 1.0 * Math.pow(0.90, lvlCount));
+      const dashInvuln = 0.5 * (1 + lvlCount * 0.10);
+      return {
+        lvlCount,
+        speedMult,
+        dashLengthMult,
+        dashDistance,
+        dashCooldown,
+        dashInvuln
+      };
     }

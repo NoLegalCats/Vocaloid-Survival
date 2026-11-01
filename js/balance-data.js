@@ -2,7 +2,7 @@
 // 0. КОНФИГУРАЦИЯ БАЛАНСА (Загружает config/balance.json и применяет настройки)
 // =========================================================================
 window.DEFAULT_BALANCE_CONFIG = {
-  "_description": "Конфигурационный файл баланса игры Vocaloid Survivors: Zombie Street. Все изменения параметров здесь автоматически применяются при запуске игры (а также продублированы в js/balance-data.js для работы через file://).",
+  "_description": "Конфигурационный файл баланса игры Vocaloid Survival 3D: Bridge Over Water (3D Isometric Chibi Blue Archive × Minecraft Voxel Zombies Edition).",
   "general": {
     "pixelsPerMeter": 18,
     "bossEveryMeters": 1000,
@@ -14,7 +14,14 @@ window.DEFAULT_BALANCE_CONFIG = {
     "xpStepGrowthPerLevel": 0.05,
     "waveTenMinuteRampScale": 0.75,
     "baseMaxZombies": 80,
-    "maxZombiesCap": 420
+    "maxZombiesCap": 420,
+    "dashBaseCooldownSec": 1.0,
+    "dashBaseInvulnSec": 0.5,
+    "dashBaseDistancePx": 155,
+    "perLevelMoveSpeedBonus": 0.05,
+    "perLevelDashLengthBonus": 0.1,
+    "perLevelDashCdReduction": 0.1,
+    "perLevelDashInvulnBonus": 0.1
   },
   "kilometerScaling": {
     "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",
@@ -77,8 +84,8 @@ window.DEFAULT_BALANCE_CONFIG = {
       "regenPerSec": 0,
       "startRerolls": 5,
       "rerollsPerBoss": 5,
-      "handheldWeaponDmgMult": 1.45,
-      "explosionDmgMult": 1.45,
+      "handheldWeaponDmgMult": 3.0,
+      "explosionDmgMult": 3.0,
       "explosionAreaMult": 2.0,
       "explosiveAbilitiesList": [
         "plush_teto",
@@ -591,7 +598,7 @@ window.DEFAULT_BALANCE_CONFIG = {
         "cdMultiplierPerDmgPoint": 0.8,
         "areaRatePerPoint": 0.5,
         "knockbackRatePerCdPoint": 0.5,
-        "baseRadius": 420,
+        "baseRadius": 210,
         "stunDuration": 0.5,
         "customStatLabels": [
           "⚡ Снижение КД бас-дропа -20%",
@@ -717,7 +724,8 @@ window.DEFAULT_BALANCE_CONFIG = {
           "💚 Лечение в зоне +5 HP/с",
           "⏱️ Длительность +2с и КД -15%",
           "🟢 +1 лужа и радиус зоны +35%"
-        ]
+        ],
+        "baseRadius": 62
       }
     },
     "holo_shield": {
@@ -865,7 +873,7 @@ window.DEFAULT_BALANCE_CONFIG = {
       "enrageHpThreshold": 0.45,
       "enrageSpeedMult": 1.32,
       "enrageCooldownMult": 0.65,
-      "alwaysLockBottomFromKm": 2,
+      "alwaysLockBottomFromKm": 999999,
       "arenaMinHeightPx": 500
     },
     "varieties": [
@@ -877,7 +885,14 @@ window.DEFAULT_BALANCE_CONFIG = {
         "hpMultiplier": 1.0,
         "armorBonus": 0.0,
         "locksBottomImmediately": false,
-        "canLockBottomOnSpecial": true
+        "canLockBottomOnSpecial": false,
+        "attackPool": [
+          "titan_leap_slam",
+          "titan_boulder_hurl",
+          "titan_seismic_fissure",
+          "titan_shockwave_roar",
+          "titan_bull_rush"
+        ]
       },
       {
         "archetype": "cyber_riot",
@@ -886,8 +901,15 @@ window.DEFAULT_BALANCE_CONFIG = {
         "size": 62,
         "hpMultiplier": 1.25,
         "armorBonus": 0.15,
-        "locksBottomImmediately": true,
-        "canLockBottomOnSpecial": true
+        "locksBottomImmediately": false,
+        "canLockBottomOnSpecial": false,
+        "attackPool": [
+          "cyber_laser_sweep",
+          "cyber_shotgun_barrage",
+          "cyber_emp_grid",
+          "cyber_shield_ram",
+          "cyber_squad_deploy"
+        ]
       },
       {
         "archetype": "plague_spitter",
@@ -897,7 +919,14 @@ window.DEFAULT_BALANCE_CONFIG = {
         "hpMultiplier": 1.15,
         "armorBonus": 0.05,
         "locksBottomImmediately": false,
-        "canLockBottomOnSpecial": true
+        "canLockBottomOnSpecial": false,
+        "attackPool": [
+          "plague_mutant_leap",
+          "plague_acid_mortar",
+          "plague_spore_nova",
+          "plague_geyser_trail",
+          "plague_outbreak_wave"
+        ]
       },
       {
         "archetype": "pyro_bomber",
@@ -906,8 +935,15 @@ window.DEFAULT_BALANCE_CONFIG = {
         "size": 60,
         "hpMultiplier": 1.2,
         "armorBonus": 0.08,
-        "locksBottomImmediately": true,
-        "canLockBottomOnSpecial": true
+        "locksBottomImmediately": false,
+        "canLockBottomOnSpecial": false,
+        "attackPool": [
+          "pyro_rocket_jump",
+          "pyro_carpet_bombs",
+          "pyro_hellfire_cross",
+          "pyro_cluster_salvo",
+          "pyro_kamikaze_call"
+        ]
       },
       {
         "archetype": "necro_lord",
@@ -916,8 +952,15 @@ window.DEFAULT_BALANCE_CONFIG = {
         "size": 58,
         "hpMultiplier": 1.3,
         "armorBonus": 0.12,
-        "locksBottomImmediately": true,
-        "canLockBottomOnSpecial": true
+        "locksBottomImmediately": false,
+        "canLockBottomOnSpecial": false,
+        "attackPool": [
+          "necro_abyss_pentagrams",
+          "necro_skull_symphony",
+          "necro_void_lasers",
+          "necro_phantom_pounce",
+          "necro_legion_ritual"
+        ]
       }
     ]
   }

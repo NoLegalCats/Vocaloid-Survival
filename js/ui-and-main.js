@@ -53,6 +53,11 @@
       state.player.invulnTimer = 0;
       state.player.shieldTimer = 0;
       state.player.overdriveTimer = 0;
+      state.player.dashCdTimer = 0;
+      state.player.dashMaxCd = 1.0;
+      state.player.dashActiveTimer = 0;
+      state.player.lastMoveDirX = 0;
+      state.player.lastMoveDirY = -1;
       state.cameraY = state.player.y - gameCanvas.height * 0.65;
 
       const badge = document.getElementById('hudSkinBadge');
@@ -249,6 +254,46 @@
     }
 
     window.onload = () => {
+      // Гарантируем наличие нижней панели HP + кругового КД деша и текста +200% у Тето даже со старым index.html
+      const tetoCard = document.querySelector('[data-skin="teto"]');
+      if (tetoCard) {
+        tetoCard.innerHTML = tetoCard.innerHTML.replace("+45%", "+200%");
+      }
+      if (!document.getElementById("bottomPlayerHud")) {
+        const mainEl = document.querySelector("main") || document.body;
+        const feedEl = document.getElementById("bottomUpgradeFeed");
+        if (feedEl) {
+          feedEl.classList.remove("bottom-3");
+          feedEl.classList.add("bottom-20");
+        }
+        const hudDiv = document.createElement("div");
+        hudDiv.id = "bottomPlayerHud";
+        hudDiv.className = "absolute bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-slate-950/90 border border-slate-700/90 shadow-[0_0_26px_rgba(0,0,0,0.85)] backdrop-blur-md";
+        hudDiv.innerHTML = `
+          <div class="flex flex-col items-center gap-1">
+            <div class="relative w-56 sm:w-72 md:w-80 h-5 bg-slate-900 rounded-full overflow-hidden border-2 border-rose-500/85 shadow-inner">
+              <div id="bottomHpBar" class="h-full bg-gradient-to-r from-rose-600 via-red-500 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+              <div id="bottomHpText" class="absolute inset-0 flex items-center justify-center text-[11px] sm:text-xs font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] tracking-wide">
+                ❤️ HP: 200 / 200
+              </div>
+            </div>
+            <div id="bottomStatsSubtext" class="text-[9px] sm:text-[10px] font-bold text-cyan-200/90 tracking-tight truncate max-w-[320px]">
+              УР.1: Скор. +0% • Деш +0% • Неуязв. 0.50с • КД 1.00с
+            </div>
+          </div>
+          <button id="dashCircleWidget" type="button" title="Рывок (Shift): 0.5с неуязвимости (+10%/ур.), КД 1с (-10%/ур.), длина +10%/ур." class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-900/95 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95 transition cursor-pointer flex-shrink-0">
+            <svg class="w-full h-full -rotate-90 p-0.5" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="#1e293b" stroke-width="4.5"></circle>
+              <circle id="dashCircleArc" cx="24" cy="24" r="20" fill="none" stroke="#22d3ee" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center leading-none pointer-events-none">
+              <span class="text-[11px] sm:text-xs">⚡</span>
+              <span id="dashCircleText" class="text-[8px] sm:text-[9px] font-black text-cyan-200 mt-0.5">SHIFT</span>
+            </div>
+          </button>
+        `;
+        mainEl.appendChild(hudDiv);
+      }
       setupHighResImageFallbacks();
       loadExternalBalanceJson();
       resizeCanvas();
@@ -260,10 +305,21 @@
 
       window.addEventListener('keydown', e => {
         keys[e.code] = true;
+        if (e.key === 'Shift') keys['Shift'] = true;
       });
       window.addEventListener('keyup', e => {
         keys[e.code] = false;
+        if (e.key === 'Shift') keys['Shift'] = false;
       });
+
+      const dashWidget = document.getElementById('dashCircleWidget');
+      if (dashWidget) {
+        dashWidget.addEventListener('click', () => {
+          if (state.running && !state.paused) {
+            state.triggerDashRequested = true;
+          }
+        });
+      }
 
       const gameCanvas = document.getElementById('gameCanvas');
       const updatePointerPos = (clientX, clientY) => {
