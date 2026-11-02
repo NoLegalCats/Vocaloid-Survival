@@ -298,6 +298,8 @@
 
     function showToast(title, subtitle, colorClass = 'border-emerald-400 bg-slate-900/95') {
       const container = document.getElementById('toastContainer');
+      if (!container) return;
+      container.className = 'pointer-events-none fixed top-16 left-1/2 -translate-x-1/2 z-[90] flex flex-col items-center gap-1.5 w-full max-w-md px-3';
       const el = document.createElement('div');
       el.className = `toast-anim w-full px-3.5 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md ${colorClass}`;
       el.innerHTML = `
@@ -1488,21 +1490,39 @@
 
       const p = state.player;
       if (obs.kind === 'destroyed_car') {
-        // Машины при уничтожении взрываются, нанося 2500 урона зомби и боссу и 200 урона игроку!
-        const carRad = 135;
-        SoundFX.playBoom(0.35, 0.10);
-        state.screenShake = Math.max(state.screenShake, 0.28);
+        // Машины при уничтожении взрываются (с уникальным авто-взрывом, чёрным дымом и разлетающимися деталями кузова!), нанося 2500 урона зомби/боссу и 100 игроку!
+        const carRad = 225;
+        SoundFX.playBoom(0.42, 0.14);
+        state.screenShake = Math.max(state.screenShake, 0.38);
         if (state.scorchMarks.length > 28) state.scorchMarks.shift();
-        state.scorchMarks.push({ x: obs.x, y: obs.y, halfSide: carRad * 0.72, alpha: 0.55 });
+        state.scorchMarks.push({ x: obs.x, y: obs.y, halfSide: carRad * 0.76, alpha: 0.68 });
         state.visualEffects.push({
-          type: 'explosion',
+          type: 'car_wreck_explosion',
           x: obs.x,
           y: obs.y,
           radius: carRad,
-          color: '#ef4444',
-          timer: 0.44,
-          maxTimer: 0.44
+          carColor: obs.color || '#dc2626',
+          timer: 0.72,
+          maxTimer: 0.72
         });
+        const partKinds = ['wheel', 'door', 'wheel', 'bumper', 'hood', 'wheel'];
+        for (let pi = 0; pi < partKinds.length; pi++) {
+          const pAng = (pi / partKinds.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.45;
+          const pDist = 85 + Math.random() * 125;
+          state.visualEffects.push({
+            type: 'car_debris_part',
+            partKind: partKinds[pi],
+            startX: obs.x,
+            startY: obs.y,
+            targetX: obs.x + Math.cos(pAng) * pDist,
+            targetY: obs.y + Math.sin(pAng) * pDist,
+            arcHeight: 55 + Math.random() * 65,
+            rotSpeed: (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 7),
+            color: obs.color || '#dc2626',
+            timer: 0.68,
+            maxTimer: 0.68
+          });
+        }
         addDamageNumber(obs.x, obs.y - 28, '💥 ВЗРЫВ МАШИНЫ! (2500)', '#ef4444');
 
         // Урон 2500 по зомби
@@ -1510,7 +1530,7 @@
           const distZ = Math.hypot(z.x - obs.x, z.y - obs.y);
           if (distZ <= carRad + z.size) {
             const angZ = Math.atan2(z.y - obs.y, z.x - obs.x);
-            damageZombie(z, 2500, angZ, 34, true);
+            damageZombie(z, 2500, angZ, 38, true);
           }
         }
         // Урон 2500 по боссу
@@ -1522,30 +1542,34 @@
             addDamageNumber(state.boss.x, state.boss.y - 36, '-2500 (ВЗРЫВ МАШИНЫ!)', '#ef4444');
           }
         }
-        // Урон 200 по игроку
+        // Урон 100 по игроку (в 2 раза меньше: 100 ед.; защищает только активный Деш или Дива-Щит!)
         if (Math.hypot(p.x - obs.x, p.y - obs.y) <= carRad + p.radius) {
-          if (p.shieldTimer <= 0 && p.invulnTimer <= 0) {
-            p.hp = Math.max(0, p.hp - 200);
-            p.invulnTimer = 0.45;
-            addDamageNumber(p.x, p.y - 24, '-200 (ВЗРЫВ МАШИНЫ!)', '#ef4444');
+          if ((p.shieldTimer || 0) <= 0 && (p.dashActiveTimer || 0) <= 0) {
+            p.hp = Math.max(0, p.hp - 100);
+            p.hitFlash = 0.25;
+            addDamageNumber(p.x, p.y - 26, '-100 💥 ВЗРЫВ МАШИНЫ!', '#ef4444');
+            updateHudDOM();
+            if (p.hp <= 0) {
+              finishGame();
+            }
           }
         }
         if (allowSecondaryBlast) {
-          damageObstaclesInCircle(obs.x, obs.y, carRad * 0.85, true);
+          damageObstaclesInCircle(obs.x, obs.y, carRad * 0.75, true);
         }
       } else if (obs.kind === 'burning_barrel') {
-        // Горящие бочки при уничтожении поджигают ближайших к себе: на 10с зомби и босса, и на 3с игрока!
-        const barrelRad = 115;
-        SoundFX.playBoom(0.24, 0.08);
-        state.screenShake = Math.max(state.screenShake, 0.18);
+        // Горящие бочки при уничтожении взрываются разливом напалма и кольцом пламени (отличается от взрывов игрока!), поджигая на 10с зомби/босса и на 1.5с игрока!
+        const barrelRad = 195;
+        SoundFX.playBoom(0.30, 0.18);
+        state.screenShake = Math.max(state.screenShake, 0.24);
         state.visualEffects.push({
-          type: 'explosion',
+          type: 'barrel_napalm_explosion',
           x: obs.x,
           y: obs.y,
           radius: barrelRad,
-          color: '#f97316',
-          timer: 0.38,
-          maxTimer: 0.38
+          seed: Math.random() * 100,
+          timer: 0.85,
+          maxTimer: 0.85
         });
         addDamageNumber(obs.x, obs.y - 24, '🔥 ПОДЖОГ БОЧКИ!', '#fb923c');
 
@@ -1554,7 +1578,7 @@
           const distZ = Math.hypot(z.x - obs.x, z.y - obs.y);
           if (distZ <= barrelRad + z.size) {
             z.burnTimer = Math.max(z.burnTimer || 0, 10.0);
-            z.burnDps = Math.max(z.burnDps || 0, 140);
+            z.burnDps = Math.max(z.burnDps || 0, 160);
             addDamageNumber(z.x, z.y - z.size, '🔥 ГОРИТ 10С!', '#fb923c');
           }
         }
@@ -1563,16 +1587,22 @@
           const distB = Math.hypot(state.boss.x - obs.x, state.boss.y - obs.y);
           if (distB <= barrelRad + state.boss.size) {
             state.boss.burnTimer = Math.max(state.boss.burnTimer || 0, 10.0);
-            state.boss.burnDps = Math.max(state.boss.burnDps || 0, 260);
+            state.boss.burnDps = Math.max(state.boss.burnDps || 0, 280);
             addDamageNumber(state.boss.x, state.boss.y - 36, '🔥 БОСС ГОРИТ 10С!', '#fb923c');
           }
         }
-        // Поджог игрока на 3 секунды
+        // Поджог игрока на 1.5 секунды (в 2 раза меньше: 1.5с; не блокируется микро-неуязвимостью от касания зомби!)
         if (Math.hypot(p.x - obs.x, p.y - obs.y) <= barrelRad + p.radius) {
-          if (p.shieldTimer <= 0 && p.invulnTimer <= 0) {
-            p.burnTimer = Math.max(p.burnTimer || 0, 3.0);
-            p.burnDps = 20;
-            addDamageNumber(p.x, p.y - 24, '🔥 ПОДЖОГ 3С!', '#fb923c');
+          if ((p.shieldTimer || 0) <= 0 && (p.dashActiveTimer || 0) <= 0) {
+            p.burnTimer = Math.max(p.burnTimer || 0, 1.5);
+            p.burnDps = 25;
+            p.burnTickAccum = 0;
+            p.hp = Math.max(0, p.hp - 15);
+            addDamageNumber(p.x, p.y - 26, '-15 🔥 ПОДЖОГ 1.5С!', '#fb923c');
+            updateHudDOM();
+            if (p.hp <= 0) {
+              finishGame();
+            }
           }
         }
       } else if (obs.kind === 'barricade') {
@@ -2505,18 +2535,29 @@
       // Горение игрока от взрыва бочки (3с)
       if (p.burnTimer && p.burnTimer > 0) {
         p.burnTimer = Math.max(0, p.burnTimer - dt);
-        if (p.shieldTimer <= 0 && p.invulnTimer <= 0) {
-          const bDmg = (p.burnDps || 20) * dt;
+        if ((p.shieldTimer || 0) <= 0 && (p.dashActiveTimer || 0) <= 0) {
+          const bDmg = (p.burnDps || 25) * dt;
           p.hp = Math.max(0, p.hp - bDmg);
           p.burnTickAccum = (p.burnTickAccum || 0) + dt;
-          if (p.burnTickAccum >= 0.5) {
+          if (p.burnTickAccum >= 0.4) {
             p.burnTickAccum = 0;
-            addDamageNumber(p.x, p.y - 22, `-${Math.round((p.burnDps || 20) * 0.5)} 🔥`, '#fb923c');
+            addDamageNumber(p.x, p.y - 22, `-${Math.round((p.burnDps || 25) * 0.4)} 🔥 (ГОРЕНИЕ)`, '#fb923c');
           }
           if (p.hp <= 0) {
             finishGame();
             return;
           }
+        }
+      }
+
+      // Открытие окна награды за босса ровно через 1 секунду после его финального взрыва!
+      if (state.pendingBossRewardTimer && state.pendingBossRewardTimer > 0) {
+        state.pendingBossRewardTimer -= dt;
+        if (state.pendingBossRewardTimer <= 0) {
+          state.pendingBossRewardTimer = 0;
+          SoundFX.playLevelUp(true);
+          grantLevelUpReward(true);
+          return;
         }
       }
 
@@ -3008,15 +3049,33 @@
           }
         }
 
-        if (!removeBullet && b.explosiveRadius > 0) {
+        if (!removeBullet) {
           for (let k = state.streetObstacles.length - 1; k >= 0; k--) {
             const obs = state.streetObstacles[k];
-            if (obs.destroyed) continue;
+            if (!obs || obs.destroyed) continue;
             const hitR = obs.isCircle ? obs.radius : Math.max(obs.halfW * 0.85, obs.halfH * 0.85);
             if (Math.hypot(obs.x - b.x, obs.y - b.y) <= hitR + b.radius) {
-              createExplosion(b.x, b.y, b.explosiveRadius, b.damage, b.color);
-              removeBullet = true;
-              break;
+              if (b.explosiveRadius > 0) {
+                createExplosion(b.x, b.y, b.explosiveRadius, b.damage, b.color);
+                removeBullet = true;
+                break;
+              } else {
+                if (obs.maxHp === undefined) {
+                  obs.maxHp = obs.kind === 'destroyed_car' ? 180 : (obs.kind === 'barricade' ? 110 : 80);
+                  obs.hp = obs.maxHp;
+                }
+                obs.hp -= Math.max(12, b.damage * 0.35);
+                obs.hitFlash = 0.08;
+                if (obs.hp <= 0) {
+                  state.streetObstacles.splice(k, 1);
+                  destroyStreetObstacle(obs, true);
+                }
+                b.pierce--;
+                if (b.pierce <= 0) {
+                  removeBullet = true;
+                }
+                break;
+              }
             }
           }
         }
@@ -3235,6 +3294,86 @@
           createSquareExplosion(bossX, bossY, 190, 9999, '#facc15');
           spawnZombieDeathParticles({ x: bossX, y: bossY, xpDrops: 0, xpPerDrop: 0, type: 'boss', isBoss: true });
 
+          // ЭПИЧНЫЙ ФИНАЛЬНЫЙ ВЗРЫВ БОССА:
+          // Для роботов/мехов (cyber_riot, pyro_bomber) — каскадный термоядерный взрыв реактора,
+          // Для зомби-боссов (titan, plague_spitter, necro_lord) — разлёт 3D-кусочков тела зомби во все стороны!
+          const isRobotBoss = (b.archetype === 'cyber_riot' || b.archetype === 'pyro_bomber');
+          if (isRobotBoss) {
+            state.screenShake = 0.85;
+            SoundFX.playBoom(0.55, 0.22);
+            state.visualEffects.push({
+              type: 'boss_death_robot_core',
+              x: bossX,
+              y: bossY,
+              radius: 260,
+              timer: 0.95,
+              maxTimer: 0.95
+            });
+            for (let burstIdx = 0; burstIdx < 6; burstIdx++) {
+              setTimeout(() => {
+                if (!state.running) return;
+                const ox = bossX + (Math.random() - 0.5) * 140;
+                const oy = bossY + (Math.random() - 0.5) * 140;
+                SoundFX.playBoom(0.32, 0.16);
+                state.visualEffects.push({
+                  type: 'explosion',
+                  x: ox,
+                  y: oy,
+                  radius: 95 + Math.random() * 45,
+                  color: burstIdx % 2 === 0 ? '#00f0ff' : '#f97316',
+                  timer: 0.45,
+                  maxTimer: 0.45
+                });
+              }, burstIdx * 120);
+            }
+            for (let sh = 0; sh < 28; sh++) {
+              const sa = (sh / 28) * Math.PI * 2 + Math.random() * 0.2;
+              const sp = 140 + Math.random() * 260;
+              state.visualEffects.push({
+                type: 'voxel_splat',
+                x: bossX,
+                y: bossY,
+                vx: Math.cos(sa) * sp,
+                vy: Math.sin(sa) * sp,
+                size: 10 + Math.random() * 6,
+                color: sh % 3 === 0 ? '#00f0ff' : (sh % 3 === 1 ? '#fde047' : '#94a3b8'),
+                timer: 0.95,
+                maxTimer: 0.95
+              });
+            }
+          } else {
+            // Зомби-босс разлетается на 3D-кусочки тела (голова, торс, конечности, кости, ядро) с отскоками от моста!
+            state.screenShake = 0.75;
+            SoundFX.playBoom(0.50, 0.20);
+            const chunkColors = [
+              b.headColor || '#22c55e',
+              b.bodyColor || '#1e1b4b',
+              b.accentColor || '#84cc16',
+              '#4ade80',
+              '#15803d'
+            ];
+            for (let ch = 0; ch < 26; ch++) {
+              const ca = (ch / 26) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+              const cSpd = 110 + Math.random() * 240;
+              state.visualEffects.push({
+                type: 'boss_death_zombie_chunk',
+                x: bossX + (Math.random() - 0.5) * 24,
+                y: bossY + (Math.random() - 0.5) * 24,
+                vx: Math.cos(ca) * cSpd,
+                vy: Math.sin(ca) * cSpd,
+                z: 18 + Math.random() * 28,
+                vz: 150 + Math.random() * 190,
+                rot: Math.random() * Math.PI * 2,
+                vRot: (Math.random() - 0.5) * 14,
+                size: ch < 4 ? 22 : (12 + Math.random() * 8),
+                color: chunkColors[ch % chunkColors.length],
+                subColor: ch % 2 === 0 ? '#dc2626' : '#fef08a',
+                timer: 0.98,
+                maxTimer: 0.98
+              });
+            }
+          }
+
           const barriersToShatter = [barrierY + 68];
           for (const bLineY of barriersToShatter) {
             for (let sp = 0; sp < 22; sp++) {
@@ -3264,8 +3403,8 @@
             `Зомби: ХП ×${newHpMult.toFixed(0)}, Скор./Урон +${Math.round((newSpdMult - 1) * 100)}% • Опыт за босса ×${xpMultDisplay}!`,
             'border-amber-400 bg-slate-900/95'
           );
-          SoundFX.playLevelUp(true);
-          grantLevelUpReward(true);
+          // Окно прокачки за победу над боссом открывается ровно через 1.0 секунду после взрыва босса!
+          state.pendingBossRewardTimer = 1.0;
         } else {
           // Плавный рост скорости и частоты атак босса до +300% по мере потери его ХП
           const rageMult = getBossMissingHpRageMult(b);
@@ -3796,6 +3935,18 @@
           fx.y += fx.vy * dt;
           fx.vx *= 0.9;
           fx.vy *= 0.9;
+        } else if (fx.type === 'boss_death_zombie_chunk') {
+          fx.x += (fx.vx || 0) * dt;
+          fx.y += (fx.vy || 0) * dt;
+          fx.vx *= 0.94;
+          fx.vy *= 0.94;
+          fx.rot = (fx.rot || 0) + (fx.vRot || 6) * dt;
+          fx.z = (fx.z || 0) + (fx.vz || 0) * dt;
+          fx.vz = (fx.vz || 0) - 520 * dt;
+          if (fx.z < 0) {
+            fx.z = 0;
+            fx.vz = Math.abs(fx.vz) * 0.45;
+          }
         } else if (fx.type === 'c130_plane') {
           const prog = 1 - Math.max(0, fx.timer) / Math.max(0.01, fx.maxTimer);
           fx.y = fx.startY + (fx.endY - fx.startY) * prog;
@@ -3997,15 +4148,41 @@
       const bottomHpBar = document.getElementById('bottomHpBar');
       const bottomHpText = document.getElementById('bottomHpText');
       const bottomStatsSubtext = document.getElementById('bottomStatsSubtext');
-      if (bottomHpBar) bottomHpBar.style.width = `${hpPct}%`;
+      if (bottomHpBar) {
+        bottomHpBar.style.width = `${hpPct}%`;
+        // Динамический цвет полоски ХП снизу (Фото 2): красный при <30% ХП, жёлтый при <70% ХП и зелёный при >=70% ХП!
+        const trackEl = bottomHpBar.parentElement;
+        if (hpPct < 30) {
+          bottomHpBar.style.background = 'linear-gradient(90deg, #b91c1c, #ef4444, #f87171)';
+          bottomHpBar.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.8)';
+          if (trackEl) {
+            trackEl.style.borderColor = 'rgba(239, 68, 68, 0.9)';
+            trackEl.style.backgroundColor = 'rgba(69, 10, 10, 0.85)';
+          }
+        } else if (hpPct < 70) {
+          bottomHpBar.style.background = 'linear-gradient(90deg, #ca8a04, #eab308, #facc15)';
+          bottomHpBar.style.boxShadow = '0 0 12px rgba(234, 179, 8, 0.7)';
+          if (trackEl) {
+            trackEl.style.borderColor = 'rgba(234, 179, 8, 0.9)';
+            trackEl.style.backgroundColor = 'rgba(69, 26, 3, 0.85)';
+          }
+        } else {
+          bottomHpBar.style.background = 'linear-gradient(90deg, #059669, #10b981, #34d399)';
+          bottomHpBar.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
+          if (trackEl) {
+            trackEl.style.borderColor = 'rgba(16, 185, 129, 0.9)';
+            trackEl.style.backgroundColor = 'rgba(6, 46, 34, 0.85)';
+          }
+        }
+      }
       if (bottomHpText) bottomHpText.textContent = `❤️ HP: ${Math.floor(p.hp)} / ${p.maxHp}`;
 
       const lvlBonuses = typeof getPlayerLevelBonuses === 'function'
         ? getPlayerLevelBonuses()
-        : { lvlCount: 0, speedMult: 1, dashDuration: 0.2, dashInvuln: 0.2, dashCooldown: 10.0 };
+        : { lvlCount: 0, speedMult: 1, dashDuration: 0.10, dashInvuln: 0.10, dashCooldown: 10.0 };
       if (bottomStatsSubtext) {
         const spdPct = +((lvlBonuses.speedMult - 1) * 100).toFixed(1);
-        const durSec = (lvlBonuses.dashDuration || 0.2).toFixed(2);
+        const durSec = (lvlBonuses.dashDuration || 0.10).toFixed(2);
         const cdSec = (lvlBonuses.dashCooldown || 10.0).toFixed(1);
         bottomStatsSubtext.textContent = `УР.${state.level}: Скор. +${spdPct}% • Рывок/Неуязв. ${durSec}с • КД деша ${cdSec}с`;
       }

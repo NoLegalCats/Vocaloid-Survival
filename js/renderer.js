@@ -1252,6 +1252,7 @@
     }
 
     function renderGame(ctx, canvasWidth, canvasHeight) {
+      const vfxAlpha = getPlayerVfxAlpha();
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
       ctx.save();
@@ -1585,7 +1586,6 @@
       }
 
       // 9. ИНДИВИДУАЛЬНАЯ ОТРИСОВКА СНАРЯДОВ ВСЕХ 10 ОРУЖИЙ (Базовая непрозрачность 100%, регулируется ползунком!)
-      const vfxAlpha = getPlayerVfxAlpha();
       ctx.save();
       ctx.globalAlpha = vfxAlpha;
       for (const b of state.bullets) {
@@ -1746,7 +1746,7 @@
       // 11. ЗРЕЛИЩНЫЕ ВИЗУАЛЬНЫЕ ЭФФЕКТЫ ВСЕХ 20 СПОСОБНОСТЕЙ И ВЗРЫВОВ (База 100%, управляется ползунком vfxAlpha!)
       for (const fx of state.visualEffects) {
         const progress = Math.max(0, Math.min(1, 1 - fx.timer / Math.max(0.001, fx.maxTimer)));
-        const isBossOrEnvFx = (fx.type === 'boss_hazard_zone' || fx.type === 'boss_laser_sweep' || fx.type === 'water_splash');
+        const isBossOrEnvFx = (fx.type === 'boss_hazard_zone' || fx.type === 'boss_laser_sweep' || fx.type === 'water_splash' || fx.type === 'boss_death_zombie_chunk' || fx.type === 'boss_death_robot_core' || fx.type === 'car_wreck_explosion' || fx.type === 'car_debris_part' || fx.type === 'barrel_napalm_explosion');
         ctx.save();
         ctx.globalAlpha = isBossOrEnvFx ? 1.0 : vfxAlpha;
 
@@ -1845,6 +1845,177 @@
           const hs = fx.halfSide;
           ctx.fillRect(fx.x - hs, fx.y - hs, hs * 2, hs * 2);
           ctx.strokeRect(fx.x - hs, fx.y - hs, hs * 2, hs * 2);
+        } else if (fx.type === 'car_wreck_explosion') {
+          // УНИКАЛЬНЫЙ ТЕХНОГЕННЫЙ ВЗРЫВ МАШИНЫ (отличается от взрывов игрока: густые клубы чёрного бензинового дыма, багровая зубчатая вспышка, искры КЗ аккумулятора и штриховое кольцо опасной зоны!)
+          const maxR = fx.radius || 225;
+          const alpha = Math.max(0, 1 - progress);
+          ctx.save();
+
+          // 1. Внешний контур опасной зоны поражения (100 урона игроку / 2500 зомби) — красно-жёлтый индустриальный пунктир
+          const ringR = maxR * (0.35 + progress * 0.65);
+          ctx.strokeStyle = `rgba(220, 38, 38, ${alpha * 0.9})`;
+          ctx.lineWidth = Math.max(2, 5.5 * (1 - progress));
+          ctx.setLineDash([14, 8]);
+          ctx.beginPath();
+          ctx.arc(fx.x, fx.y, ringR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 2. Клубы густого тёмно-серого и чёрного машинного дыма по кольцу
+          for (let sm = 0; sm < 8; sm++) {
+            const sAng = (sm / 8) * Math.PI * 2 + progress * 0.6;
+            const sDist = maxR * (0.18 + progress * 0.58);
+            const sx = fx.x + Math.cos(sAng) * sDist;
+            const sy = fx.y + Math.sin(sAng) * sDist - progress * 22;
+            const sr = (22 + (sm % 3) * 8) * (0.6 + progress * 0.7);
+            ctx.fillStyle = sm % 2 === 0 ? `rgba(15, 23, 42, ${alpha * 0.78})` : `rgba(51, 65, 85, ${alpha * 0.72})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // 3. Зубчатая багрово-бензиновая звезда детонации топливного бака (12 острых лучей)
+          if (progress < 0.75) {
+            const starAlpha = Math.max(0, 1 - progress / 0.75);
+            const outerSpikes = 12;
+            const outerR = maxR * (0.42 + progress * 0.45);
+            const innerR = outerR * 0.48;
+            ctx.fillStyle = `rgba(220, 38, 38, ${starAlpha * 0.85})`;
+            ctx.strokeStyle = `rgba(250, 204, 21, ${starAlpha * 0.95})`;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (let i = 0; i < outerSpikes * 2; i++) {
+              const r = i % 2 === 0 ? outerR : innerR;
+              const a = (i * Math.PI) / outerSpikes - progress * 1.4;
+              const px = fx.x + Math.cos(a) * r;
+              const py = fx.y + Math.sin(a) * r;
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+
+          // 4. Электродуги короткого замыкания аккумулятора автомобиля (голубые молнии из центра)
+          if (progress < 0.6) {
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.95})`;
+            ctx.lineWidth = 2.2;
+            for (let b = 0; b < 4; b++) {
+              const ba = (b * Math.PI) / 2 + progress * 5;
+              ctx.beginPath();
+              ctx.moveTo(fx.x, fx.y);
+              const mx = fx.x + Math.cos(ba + 0.22) * maxR * 0.32;
+              const my = fx.y + Math.sin(ba + 0.22) * maxR * 0.32;
+              const ex = fx.x + Math.cos(ba - 0.15) * maxR * 0.62;
+              const ey = fx.y + Math.sin(ba - 0.15) * maxR * 0.62;
+              ctx.lineTo(mx, my);
+              ctx.lineTo(ex, ey);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+        } else if (fx.type === 'car_debris_part') {
+          // Разлетающиеся по 3D-параболе детали взорванной машины (колёса, двери, бамперы, капот)
+          const curX = fx.startX + (fx.targetX - fx.startX) * progress;
+          const curY = fx.startY + (fx.targetY - fx.startY) * progress;
+          const arcZ = Math.sin(progress * Math.PI) * (fx.arcHeight || 70);
+          const rot = progress * (fx.rotSpeed || 8);
+
+          drawSoftGroundShadow(ctx, curX, curY, 10 * (1 - arcZ / 180), 5 * (1 - arcZ / 180), 0.35 * (1 - progress));
+          ctx.save();
+          ctx.translate(curX, curY - arcZ);
+          ctx.rotate(rot);
+          if (fx.partKind === 'wheel') {
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (fx.partKind === 'door' || fx.partKind === 'hood') {
+            ctx.fillStyle = fx.color || '#dc2626';
+            ctx.strokeStyle = '#090d16';
+            ctx.lineWidth = 1.6;
+            ctx.fillRect(-10, -7, 20, 14);
+            ctx.strokeRect(-10, -7, 20, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-6, -4, 12, 5);
+          } else {
+            ctx.fillStyle = '#94a3b8';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(-12, -3.5, 24, 7);
+            ctx.strokeRect(-12, -3.5, 24, 7);
+          }
+          ctx.restore();
+        } else if (fx.type === 'barrel_napalm_explosion') {
+          // УНИКАЛЬНЫЙ НАПАЛМОВЫЙ РАЗЛИВ ГОРЯЩЕЙ БОЧКИ (отличается от взрывов игрока: брызги жидкого горючего, лужи напалма и танцующие языки пламени по кругу!)
+          const maxR = fx.radius || 195;
+          const alpha = Math.max(0, 1 - progress);
+          ctx.save();
+
+          // 1. Огненная лужа разлившегося горючего на асфальте
+          const poolR = maxR * Math.min(1, 0.35 + progress * 0.85);
+          const napGrad = ctx.createRadialGradient(fx.x, fx.y, poolR * 0.08, fx.x, fx.y, poolR);
+          napGrad.addColorStop(0, `rgba(254, 240, 138, ${alpha * 0.72})`);
+          napGrad.addColorStop(0.45, `rgba(249, 115, 22, ${alpha * 0.52})`);
+          napGrad.addColorStop(0.82, `rgba(180, 83, 9, ${alpha * 0.32})`);
+          napGrad.addColorStop(1, 'rgba(124, 45, 18, 0)');
+          ctx.fillStyle = napGrad;
+          ctx.beginPath();
+          ctx.arc(fx.x, fx.y, poolR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 2. Волнистое кольцо зоны поджога (10с зомби / 3с игроку)
+          ctx.strokeStyle = `rgba(251, 146, 60, ${alpha * 0.92})`;
+          ctx.lineWidth = Math.max(1.8, 3.8 * (1 - progress));
+          ctx.beginPath();
+          const waveSteps = 28;
+          for (let w = 0; w <= waveSteps; w++) {
+            const wa = (w / waveSteps) * Math.PI * 2;
+            const wr = poolR + Math.sin(wa * 7 + progress * 14) * 6;
+            const wx = fx.x + Math.cos(wa) * wr;
+            const wy = fx.y + Math.sin(wa) * wr;
+            if (w === 0) ctx.moveTo(wx, wy);
+            else ctx.lineTo(wx, wy);
+          }
+          ctx.closePath();
+          ctx.stroke();
+
+          // 3. 10 струй брызжущего напалма и танцующих столбов огня вокруг бочки
+          for (let fl = 0; fl < 10; fl++) {
+            const fAng = (fl / 10) * Math.PI * 2 + ((fx.seed || 0) % 3.14);
+            const fDist = poolR * (0.28 + ((fl % 3) * 0.26));
+            const fxPos = fx.x + Math.cos(fAng) * fDist;
+            const fyPos = fx.y + Math.sin(fAng) * fDist;
+            const flameH = (20 + (fl % 2) * 12) * Math.max(0.2, 1 - progress * 0.75);
+            const sway = Math.sin(state.timeElapsed * 18 + fl * 1.7) * 5;
+
+            // Внешний язык пламени (красно-оранжевый)
+            ctx.fillStyle = `rgba(234, 88, 12, ${alpha * 0.88})`;
+            ctx.beginPath();
+            ctx.moveTo(fxPos - 9, fyPos);
+            ctx.quadraticCurveTo(fxPos - 5 + sway, fyPos - flameH * 0.6, fxPos + sway, fyPos - flameH);
+            ctx.quadraticCurveTo(fxPos + 5 + sway, fyPos - flameH * 0.6, fxPos + 9, fyPos);
+            ctx.closePath();
+            ctx.fill();
+
+            // Внутренний язык пламени (жёлто-белый)
+            ctx.fillStyle = `rgba(254, 240, 138, ${alpha * 0.92})`;
+            ctx.beginPath();
+            ctx.moveTo(fxPos - 4.5, fyPos);
+            ctx.quadraticCurveTo(fxPos + sway * 0.6, fyPos - flameH * 0.45, fxPos + sway * 0.7, fyPos - flameH * 0.65);
+            ctx.quadraticCurveTo(fxPos + 4.5, fyPos - flameH * 0.3, fxPos + 4.5, fyPos);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
         } else if (fx.type === 'square_explosion' || fx.type === 'explosion') {
           // ЭФФЕКТНЫЕ МНОГОСЛОЙНЫЕ ВЗРЫВЫ С БЕЛЫМ ЯДРОМ И УДАРНОЙ ВОЛНОЙ (Точно как на видео 00:09 и 00:11!)
           const maxR = fx.type === 'square_explosion' ? fx.halfSide * 1.15 : fx.radius;
@@ -2108,6 +2279,57 @@
               ctx.stroke();
             }
             ctx.restore();
+          }
+          ctx.restore();
+        } else if (fx.type === 'boss_death_zombie_chunk') {
+          // Разлетающиеся 3D-кусочки тела поверженного Зомби-Босса с гравитацией и отскоками от моста!
+          ctx.save();
+          const zH = Math.max(0, fx.z || 0);
+          drawSoftGroundShadow(ctx, fx.x, fx.y + 6, fx.size * 0.65, fx.size * 0.32, 0.45);
+          ctx.translate(fx.x, fx.y - zH);
+          ctx.rotate(fx.rot || 0);
+          const s = fx.size || 14;
+          ctx.fillStyle = fx.color || '#22c55e';
+          ctx.strokeStyle = '#090d16';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-s * 0.5, -s * 0.5, s, s * 0.85);
+          ctx.strokeRect(-s * 0.5, -s * 0.5, s, s * 0.85);
+          // Деталь куска зомби (кость / глаз / броня)
+          ctx.fillStyle = fx.subColor || '#dc2626';
+          ctx.fillRect(-s * 0.22, -s * 0.22, s * 0.44, s * 0.44);
+          ctx.restore();
+        } else if (fx.type === 'boss_death_robot_core') {
+          // Эпичный термоядерный взрыв Робота-Босса с кольцами плазмы и молниями!
+          ctx.save();
+          const maxR = fx.radius || 220;
+          const curR = maxR * (0.25 + progress * 0.85);
+          const alpha = Math.max(0, 1 - progress * 0.85);
+          const grad = ctx.createRadialGradient(fx.x, fx.y, 8, fx.x, fx.y, curR);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          grad.addColorStop(0.35, `rgba(56, 189, 248, ${alpha * 0.9})`);
+          grad.addColorStop(0.7, `rgba(249, 115, 22, ${alpha * 0.75})`);
+          grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(fx.x, fx.y, curR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+          ctx.lineWidth = 4 * (1 - progress * 0.5);
+          ctx.beginPath();
+          ctx.arc(fx.x, fx.y, curR * 0.85, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Электрические дуги распада реактора робота
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 2.5;
+          for (let aIdx = 0; aIdx < 8; aIdx++) {
+            const ang = (aIdx / 8) * Math.PI * 2 + progress * 6;
+            ctx.beginPath();
+            ctx.moveTo(fx.x + Math.cos(ang) * 18, fx.y + Math.sin(ang) * 18);
+            ctx.lineTo(fx.x + Math.cos(ang + 0.18) * curR * 0.55, fx.y + Math.sin(ang + 0.18) * curR * 0.55);
+            ctx.lineTo(fx.x + Math.cos(ang) * curR * 0.95, fx.y + Math.sin(ang) * curR * 0.95);
+            ctx.stroke();
           }
           ctx.restore();
         } else if (fx.type === 'road_roller') {

@@ -21,15 +21,15 @@
     "perLevelDashInvulnBonus": 0.1,
     "dashMinCooldownSec": 0.3,
     "dashCooldownReductionPerLevelSec": 0.1,
-    "dashBaseDurationSec": 0.2,
+    "dashBaseDurationSec": 0.1,
     "dashMaxDurationSec": 2.0,
-    "dashDurationBonusPerLevelSec": 0.05,
+    "dashDurationBonusPerLevelSec": 0.02,
     "minUnbanishedPoolSize": 5,
     "defaultVfxOpacityPct": 75,
     "carExplosionZombieBossDamage": 2500,
-    "carExplosionPlayerDamage": 200,
+    "carExplosionPlayerDamage": 100,
     "barrelBurnZombieBossDurationSec": 10.0,
-    "barrelBurnPlayerDurationSec": 3.0
+    "barrelBurnPlayerDurationSec": 1.5
   },
   "kilometerScaling": {
     "_comment": "Множители за каждого побеждённого босса (каждый 1 км)",

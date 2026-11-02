@@ -3,8 +3,56 @@
     // =========================================================================
     let animFrameId = null;
 
+
+    // Автоматический Drag-and-Drop аудиофайлов или всей папки music/ прямо на экран игры во время боя!
+    async function handleDroppedAudioEntries(itemsOrFiles) {
+      const audioFiles = [];
+      const traverseEntry = async (entry) => {
+        if (!entry) return;
+        if (entry.isFile) {
+          const f = await new Promise(res => entry.file(res, () => res(null)));
+          if (f && /\.(mp3|wav|ogg|oga|opus|flac|m4a|aac|mp4|webm|weba|wma|mka|ape|wv)$/i.test(f.name)) {
+            audioFiles.push(f);
+          }
+        } else if (entry.isDirectory) {
+          const reader = entry.createReader();
+          const readAllBatch = async () => {
+            const batch = await new Promise(res => reader.readEntries(res, () => res([])));
+            if (batch.length > 0) {
+              for (const child of batch) await traverseEntry(child);
+              await readAllBatch();
+            }
+          };
+          await readAllBatch();
+        }
+      };
+
+      for (const item of itemsOrFiles) {
+        if (item.webkitGetAsEntry) {
+          const entry = item.webkitGetAsEntry();
+          if (entry) await traverseEntry(entry);
+          else if (item.kind === 'file') {
+            const f = item.getAsFile();
+            if (f && /\.(mp3|wav|ogg|oga|opus|flac|m4a|aac|mp4|webm|weba|wma|mka|ape|wv)$/i.test(f.name)) audioFiles.push(f);
+          }
+        } else if (item instanceof File) {
+          if (/\.(mp3|wav|ogg|oga|opus|flac|m4a|aac|mp4|webm|weba|wma|mka|ape|wv)$/i.test(item.name)) audioFiles.push(item);
+        }
+      }
+
+      if (audioFiles.length > 0 && typeof MusicPlayer !== 'undefined') {
+        MusicPlayer.loadUserSelectedFiles(audioFiles);
+      }
+    }
+
     function startNewRun() {
       SoundFX.init();
+      if (typeof MusicPlayer !== 'undefined') {
+        MusicPlayer.setGamePaused(false);
+        MusicPlayer.startIfReady();
+      }
+      const btnPauseEl = document.getElementById('btnPauseGame');
+      if (btnPauseEl) btnPauseEl.textContent = '⏸️';
       const skin = SKINS[selectedSkinId];
 
       state.running = true;
@@ -53,6 +101,8 @@
       state.player.invulnTimer = 0;
       state.player.shieldTimer = 0;
       state.player.overdriveTimer = 0;
+      state.pendingBossRewardTimer = 0;
+      state.player.burnTimer = 0;
       state.banishedItems = new Set();
       state.lastWarnedBossMeters = 0;
       state.player.dashCdTimer = 0;
@@ -271,6 +321,22 @@
       if (l1) l1.textContent = `${clamped}%`;
       if (s2 && Number(s2.value) !== clamped) s2.value = String(clamped);
       if (l2) l2.textContent = `${clamped}%`;
+    }
+
+    function syncMusicVolumeSliders(pctValue) {
+      const num = Number(pctValue);
+      const clamped = Math.max(0, Math.min(100, Number.isNaN(num) ? 35 : Math.round(num)));
+      if (typeof MusicPlayer !== 'undefined') {
+        MusicPlayer.setVolume(clamped / 100);
+      }
+      const m1 = document.getElementById('musicVolumeSlider');
+      const ml1 = document.getElementById('musicVolumeLabel');
+      const m2 = document.getElementById('musicVolumeSliderStart');
+      const ml2 = document.getElementById('musicVolumeLabelStart');
+      if (m1 && Number(m1.value) !== clamped) m1.value = String(clamped);
+      if (ml1) ml1.textContent = `${clamped}%`;
+      if (m2 && Number(m2.value) !== clamped) m2.value = String(clamped);
+      if (ml2) ml2.textContent = `${clamped}%`;
     }
 
     function openCustomConfigModal(initialProfileName = '') {
@@ -614,7 +680,7 @@
               </div>
             </div>
             <div id="bottomStatsSubtext" class="text-[9px] sm:text-[10px] font-bold text-cyan-200/90 tracking-tight truncate max-w-[320px]">
-              УР.1: Скор. +0% • Деш +0% • Неуязв. 0.50с • КД 1.00с
+              УР.1: Скор. +0% • Рывок/Неуязв. 0.10с • КД деша 10.0с
             </div>
           </div>
           <button id="dashCircleWidget" type="button" title="Рывок (Shift): 0.5с неуязвимости (+10%/ур.), КД 1с (-10%/ур.), длина +10%/ур." class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-900/95 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95 transition cursor-pointer flex-shrink-0">
@@ -633,11 +699,23 @@
       setupHighResImageFallbacks();
       loadExternalBalanceJson();
       syncVfxOpacitySliders(75);
+      if (typeof MusicPlayer !== 'undefined' && !window.IS_MOBILE_BUILD) {
+        MusicPlayer.init().then(() => {
+          syncMusicVolumeSliders(MusicPlayer.getVolumePercent());
+        });
+      } else {
+        syncMusicVolumeSliders(35);
+      }
 
       const vfxS1 = document.getElementById('vfxOpacitySlider');
       const vfxS2 = document.getElementById('vfxOpacitySliderStart');
       if (vfxS1) vfxS1.addEventListener('input', e => syncVfxOpacitySliders(e.target.value));
       if (vfxS2) vfxS2.addEventListener('input', e => syncVfxOpacitySliders(e.target.value));
+
+      const musS1 = document.getElementById('musicVolumeSlider');
+      const musS2 = document.getElementById('musicVolumeSliderStart');
+      if (musS1) musS1.addEventListener('input', e => syncMusicVolumeSliders(e.target.value));
+      if (musS2) musS2.addEventListener('input', e => syncMusicVolumeSliders(e.target.value));
 
       const cfgSelect = document.getElementById('configProfileSelect');
       if (cfgSelect) {
@@ -713,6 +791,53 @@
       renderStartScreenPreviews();
 
       window.addEventListener('resize', resizeCanvas);
+
+      // Drag and drop аудиофайлов прямо в окно браузера во время игры
+      window.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      window.addEventListener('drop', async e => {
+        e.preventDefault();
+        const items = e.dataTransfer.items || e.dataTransfer.files || [];
+        await handleDroppedAudioEntries(items);
+      });
+
+      // Кнопки подключения папки music/ и переключения треков
+      const btnConnectMusic = document.getElementById('btnConnectMusicFolder');
+      if (btnConnectMusic) {
+        btnConnectMusic.addEventListener('click', () => {
+          if (typeof MusicPlayer !== 'undefined') MusicPlayer.connectMusicFolderPicker();
+        });
+      }
+      const btnHudConnectMusic = document.getElementById('btnHudConnectMusic');
+      if (btnHudConnectMusic) {
+        btnHudConnectMusic.addEventListener('click', () => {
+          if (typeof MusicPlayer !== 'undefined') MusicPlayer.connectMusicFolderPicker();
+        });
+      }
+      const btnHudNext = document.getElementById('btnHudNextMusicTrack');
+      if (btnHudNext) {
+        btnHudNext.addEventListener('click', () => {
+          SoundFX.init();
+          if (typeof MusicPlayer !== 'undefined') MusicPlayer.playNextRandom();
+        });
+      }
+      const btnNextMusicTrack = document.getElementById('btnNextMusicTrack');
+      if (btnNextMusicTrack) {
+        btnNextMusicTrack.addEventListener('click', () => {
+          SoundFX.init();
+          if (typeof MusicPlayer !== 'undefined') MusicPlayer.playNextRandom();
+        });
+      }
+      const musicFolderInput = document.getElementById('musicFolderInput');
+      if (musicFolderInput) {
+        musicFolderInput.addEventListener('change', e => {
+          if (typeof MusicPlayer !== 'undefined' && e.target.files && e.target.files.length > 0) {
+            MusicPlayer.loadUserSelectedFiles(e.target.files);
+          }
+        });
+      }
 
       window.addEventListener('keydown', e => {
         keys[e.code] = true;
@@ -801,8 +926,8 @@
           mouseAimEnabled = !mouseAimEnabled;
           btnMouseAim.textContent = mouseAimEnabled ? '🎯 Прицел мышкой: ВКЛ' : '🎯 Прицел мышкой: ВЫКЛ';
           btnMouseAim.className = mouseAimEnabled
-            ? 'px-2 py-1 rounded text-[10px] font-bold bg-cyan-800/80 hover:bg-cyan-700 text-white border border-cyan-400 transition'
-            : 'px-2 py-1 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition';
+            ? 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-800/80 hover:bg-cyan-700 text-white border border-cyan-400 transition whitespace-nowrap'
+            : 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition whitespace-nowrap';
         });
       }
 
@@ -812,8 +937,8 @@
           autoMarchEnabled = !autoMarchEnabled;
           btnAutoMarch.textContent = autoMarchEnabled ? '⬆️ Авто-ход: ВКЛ' : '⬆️ Авто-ход: ВЫКЛ';
           btnAutoMarch.className = autoMarchEnabled
-            ? 'px-2 py-1 rounded text-[10px] font-bold bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-500 transition'
-            : 'px-2 py-1 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition';
+            ? 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-500 transition whitespace-nowrap'
+            : 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition whitespace-nowrap';
         });
       }
 
@@ -888,8 +1013,8 @@
         randomDropMode = !randomDropMode;
         btnDropMode.textContent = randomDropMode ? '🎲 Дроп: Авто' : '🃏 Дроп: Выбор';
         btnDropMode.className = randomDropMode
-          ? 'px-2 py-1 rounded text-[10px] font-bold bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400 transition'
-          : 'px-2 py-1 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition';
+          ? 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400 transition whitespace-nowrap'
+          : 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition whitespace-nowrap';
         updateHudDOM();
       });
 
@@ -901,6 +1026,7 @@
       document.getElementById('btnOpenArsenalDuringGame').addEventListener('click', () => {
         wasPausedBeforeCatalog = state.paused;
         state.paused = true;
+        if (typeof MusicPlayer !== 'undefined') MusicPlayer.setGamePaused(true);
         catalogModal.classList.remove('hidden');
       });
       document.getElementById('btnCloseCatalog').addEventListener('click', () => {
@@ -908,6 +1034,7 @@
         if (state.running && !wasPausedBeforeCatalog) {
           state.paused = false;
           state.lastTimestamp = performance.now();
+          if (typeof MusicPlayer !== 'undefined') MusicPlayer.setGamePaused(false);
         }
       });
 
@@ -915,6 +1042,9 @@
       btnSoundToggle.addEventListener('click', () => {
         SoundFX.muted = !SoundFX.muted;
         btnSoundToggle.textContent = SoundFX.muted ? '🔇 Без звука' : '🔊 Звук';
+        if (typeof MusicPlayer !== 'undefined') {
+          MusicPlayer.setMuted(SoundFX.muted);
+        }
       });
 
       const btnPauseGame = document.getElementById('btnPauseGame');
@@ -923,12 +1053,18 @@
         state.paused = !state.paused;
         btnPauseGame.textContent = state.paused ? '▶️' : '⏸️';
         if (!state.paused) state.lastTimestamp = performance.now();
+        if (typeof MusicPlayer !== 'undefined') {
+          MusicPlayer.setGamePaused(state.paused);
+        }
       });
 
       document.getElementById('btnContinueEndless').addEventListener('click', () => {
         document.getElementById('endModal').classList.add('hidden');
         state.paused = false;
         state.lastTimestamp = performance.now();
+        if (typeof MusicPlayer !== 'undefined') {
+          MusicPlayer.setGamePaused(false);
+        }
       });
       function saveEndStatsAsScreenshot() {
         const counts = getTotalItemsCount();

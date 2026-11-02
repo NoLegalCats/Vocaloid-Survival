@@ -1,0 +1,5 @@
+window.MUSIC_PLAYLIST_JSON = [
+  "YARARARA.mp3",
+  "Unwelcome School.mp3",
+  "The_Bass.mp3"
+];

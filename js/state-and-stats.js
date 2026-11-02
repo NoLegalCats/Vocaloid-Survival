@@ -1596,10 +1596,10 @@
     function getPlayerLevelBonuses() {
       const lvlCount = Math.max(0, (state.level || 1) - 1);
       const speedMult = 1 + lvlCount * 0.025; // +2.5% к скорости перемещения за уровень
-      const dashDuration = Math.min(2.0, +(0.20 + lvlCount * 0.05).toFixed(2)); // 0.2с + 0.05с за уровень (до 2.0с)
-      const dashInvuln = dashDuration; // Неуязвимость связана со временем всего рывка (0.2с -> 2.0с)
+      const dashDuration = Math.min(2.0, +(0.10 + lvlCount * 0.02).toFixed(2)); // Начальный рывок 0.10с и +0.02с за уровень (до 2.0с)
+      const dashInvuln = dashDuration; // Неуязвимость связана со временем всего рывка (0.10с -> 2.0с)
       const dashCooldown = Math.max(0.30, +(10.0 - lvlCount * 0.10).toFixed(2)); // 10с - 0.1с за уровень (минимум 0.3с)
-      const dashSpeedPxPerSec = 760; // Одинаковая скорость рывка для всех персонажей
+      const dashSpeedPxPerSec = 1080; // Одинаковая стремительная скорость рывка для всех персонажей
       const dashDistance = Math.round(dashSpeedPxPerSec * dashDuration);
       return {
         lvlCount,

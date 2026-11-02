@@ -122,30 +122,53 @@
           </div>
         </div>
 
-        <!-- Right Quick Action Buttons (2-row compact grid so HUD center never gets crushed) -->
-        <div class="flex flex-wrap items-center justify-end gap-1 max-w-[295px] flex-shrink-0">
-          <button id="btnMouseAim" type="button" title="Прицеливание курсором мыши для MP5, Парных Снайперок, Дробовика SPAS-12, РПГ-7 и Рельсотрона" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-800/80 hover:bg-cyan-700 text-white border border-cyan-400 transition">
-            🎯 Прицел мышкой: ВКЛ
-          </button>
-          <button id="btnAutoMarch" type="button" title="Авто-продвижение вперед по дороге (уклоняется от босса)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition">
-            ⬆️ Авто-ход: ВЫКЛ
-          </button>
-          <button id="btnDropMode" type="button" title="Режим получения оружия при левел-апе" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition">
-            🃏 Дроп: Выбор
-          </button>
-          <button id="btnOpenArsenalDuringGame" type="button" title="Посмотреть все 10 оружий и 20 абилок" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 transition">
-            📦 Пул (30)
-          </button>
-          <button id="btnSoundToggle" type="button" title="Включить/выключить звук" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition">
-            🔊 Звук
-          </button>
-          <button id="btnPauseGame" type="button" title="Пауза" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 transition">
-            ⏸️
-          </button>
-          <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900/95 border border-cyan-500/50 text-[10px] font-bold text-cyan-200" title="Прозрачность эффектов персонажа (кроме Плюшки Тето)">
-            <span>✨ Эффекты:</span>
-            <input id="vfxOpacitySlider" type="range" min="5" max="100" value="75" class="w-16 h-1.5 accent-cyan-400 cursor-pointer" />
-            <span id="vfxOpacityLabel" class="font-mono text-white w-7 text-right">75%</span>
+        <!-- Right Quick Action Buttons (Strictly 3 neat rows as requested in Photo 1!) -->
+        <div class="flex flex-col items-end justify-center gap-1 flex-shrink-0">
+          <!-- Строка 1: Боевые переключатели и пул предметов -->
+          <div class="flex items-center justify-end gap-1 whitespace-nowrap">
+            <button id="btnMouseAim" type="button" title="Прицеливание курсором мыши для MP5, Парных Снайперок, Дробовика SPAS-12, РПГ-7 и Рельсотрона" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-800/80 hover:bg-cyan-700 text-white border border-cyan-400 transition whitespace-nowrap">
+              🎯 Прицел мышкой: ВКЛ
+            </button>
+            <button id="btnAutoMarch" type="button" title="Авто-продвижение вперед по дороге (уклоняется от босса)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition whitespace-nowrap">
+              ⬆️ Авто-ход: ВЫКЛ
+            </button>
+            <button id="btnDropMode" type="button" title="Режим получения оружия при левел-апе" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition whitespace-nowrap">
+              🃏 Дроп: Выбор
+            </button>
+            <button id="btnOpenArsenalDuringGame" type="button" title="Посмотреть все 10 оружий и 20 абилок" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 transition whitespace-nowrap">
+              📦 Пул (30)
+            </button>
+          </div>
+          <!-- Строка 2: Плеер папки music/, выключение звука (ставит музыку на паузу) и пауза игры -->
+          <div class="flex items-center justify-end gap-1 whitespace-nowrap">
+            <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900/95 border border-emerald-500/60 text-[10px] font-bold text-emerald-300" title="Фоновая музыка из папки music/ (авто-поиск и случайный порядок)">
+              <span id="hudMusicTrackLabel" class="truncate max-w-[165px]">🎵 music/: авто</span>
+              <button id="btnHudNextMusicTrack" type="button" title="Следующий случайный трек" class="px-1 py-0.2 rounded bg-emerald-800/80 hover:bg-emerald-700 text-white transition">
+                ⏭️
+              </button>
+              <button id="btnHudConnectMusic" type="button" title="Подключить / обновить папку music/" class="px-1 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 transition">
+                📁
+              </button>
+            </div>
+            <button id="btnSoundToggle" type="button" title="Включить/выключить звук (ставит музыку на паузу)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition whitespace-nowrap">
+              🔊 Звук
+            </button>
+            <button id="btnPauseGame" type="button" title="Пауза игры и музыки" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 transition whitespace-nowrap">
+              ⏸️
+            </button>
+          </div>
+          <!-- Строка 3: Ползунки громкости музыки и прозрачности эффектов -->
+          <div class="flex items-center justify-end gap-1 whitespace-nowrap">
+            <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900/95 border border-emerald-500/50 text-[10px] font-bold text-emerald-200" title="Громкость фоновой музыки">
+              <span>🎵 Музыка:</span>
+              <input id="musicVolumeSlider" type="range" min="0" max="100" value="35" class="w-14 h-1.5 accent-emerald-400 cursor-pointer" />
+              <span id="musicVolumeLabel" class="font-mono text-white w-7 text-right">35%</span>
+            </div>
+            <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900/95 border border-cyan-500/50 text-[10px] font-bold text-cyan-200" title="Прозрачность эффектов персонажа (кроме Плюшки Тето)">
+              <span>✨ Эффекты:</span>
+              <input id="vfxOpacitySlider" type="range" min="5" max="100" value="75" class="w-14 h-1.5 accent-cyan-400 cursor-pointer" />
+              <span id="vfxOpacityLabel" class="font-mono text-white w-7 text-right">75%</span>
+            </div>
           </div>
         </div>
       </div>
@@ -195,7 +218,7 @@
     </div>
 
     <!-- Floating Milestone Toast Container -->
-    <div id="toastContainer" class="pointer-events-none absolute top-36 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 w-full max-w-md px-3"></div>
+    <div id="toastContainer" class="pointer-events-none fixed top-16 left-1/2 -translate-x-1/2 z-[90] flex flex-col items-center gap-1.5 w-full max-w-md px-3"></div>
 
     <!-- BOTTOM RARITY & STAT UPGRADE FEED (Positioned above the bottom HP & Dash HUD!) -->
     <div id="bottomUpgradeFeed" class="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 z-40 flex flex-col-reverse items-center gap-2 w-[94%] max-w-xl"></div>
@@ -204,19 +227,19 @@
     <div id="bottomPlayerHud" class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-slate-950/90 border border-slate-700/90 shadow-[0_0_26px_rgba(0,0,0,0.85)] backdrop-blur-md">
       <!-- Centered Character HP Bar + Level Scaling Info -->
       <div class="flex flex-col items-center gap-1">
-        <div class="relative w-56 sm:w-72 md:w-80 h-5 bg-slate-900 rounded-full overflow-hidden border-2 border-rose-500/85 shadow-inner">
-          <div id="bottomHpBar" class="h-full bg-gradient-to-r from-rose-600 via-red-500 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+        <div id="bottomHpBarTrack" class="relative w-56 sm:w-72 md:w-80 h-5 rounded-full overflow-hidden border-2 shadow-inner transition-colors duration-200" style="border-color: rgba(16, 185, 129, 0.9); background-color: rgba(6, 46, 34, 0.85);">
+          <div id="bottomHpBar" class="h-full transition-all duration-150" style="width: 100%; background: linear-gradient(90deg, #059669, #10b981, #34d399); box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);"></div>
           <div id="bottomHpText" class="absolute inset-0 flex items-center justify-center text-[11px] sm:text-xs font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] tracking-wide">
             ❤️ HP: 200 / 200
           </div>
         </div>
         <div id="bottomStatsSubtext" class="text-[9px] sm:text-[10px] font-bold text-cyan-200/90 tracking-tight truncate max-w-[320px]">
-          УР.1: Скор. +0% • Рывок/Неуязв. 0.20с • КД деша 10.0с
+          УР.1: Скор. +0% • Рывок/Неуязв. 0.10с • КД деша 10.0с
         </div>
       </div>
 
       <!-- Circular Dash Cooldown Indicator to the right of the HP bar -->
-      <button id="dashCircleWidget" type="button" title="Рывок (Shift): 0.5с неуязвимости (+10%/ур.), КД 1с (-10%/ур.), длина +10%/ур." class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-900/95 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95 transition cursor-pointer flex-shrink-0">
+      <button id="dashCircleWidget" type="button" title="Рывок (Shift): начальный 0.10с (+0.02с/ур. до 2.0с), неуязвимость на время рывка, КД 10.0с (-0.1с/ур. до 0.3с)" class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-900/95 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95 transition cursor-pointer flex-shrink-0">
         <svg class="w-full h-full -rotate-90 p-0.5" viewBox="0 0 48 48">
           <circle cx="24" cy="24" r="20" fill="none" stroke="#1e293b" stroke-width="4.5"></circle>
           <circle id="dashCircleArc" cx="24" cy="24" r="20" fill="none" stroke="#22d3ee" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="0"></circle>
@@ -275,6 +298,25 @@
                 📂
               </label>
               <input id="configJsonFileInput" type="file" accept=".json" multiple class="hidden" />
+            </div>
+            <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-800/90 text-[10px] font-bold text-emerald-300">
+              <span id="musicTrackStatusLabel" class="truncate max-w-[155px]">🎵 Папка music/: авто</span>
+              <div class="flex items-center gap-1">
+                <button id="btnConnectMusicFolder" type="button" title="Подключить папку music/ для непрерывного авто-слежения за новыми треками" class="px-2 py-0.5 rounded bg-emerald-800/80 hover:bg-emerald-700 text-white cursor-pointer border border-emerald-400/60 transition">
+                  🎵 Папка music/
+                </button>
+                <input id="musicFolderInput" type="file" webkitdirectory directory multiple class="hidden" />
+                <button id="btnNextMusicTrack" type="button" title="Следующий случайный трек" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition">
+                  ⏭️
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/90 text-[10px] font-bold text-emerald-200">
+              <span>🎵 Громкость музыки:</span>
+              <div class="flex items-center gap-1.5">
+                <input id="musicVolumeSliderStart" type="range" min="0" max="100" value="35" class="w-20 h-1.5 accent-emerald-400 cursor-pointer" />
+                <span id="musicVolumeLabelStart" class="font-mono text-white w-8 text-right">35%</span>
+              </div>
             </div>
             <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/90 text-[10px] font-bold text-cyan-200">
               <span>✨ Прозрачность эффектов:</span>
@@ -575,6 +617,8 @@
     </div>
   </div>
 
+  <script src="music/playlist.json"></script>
+  <script src="music/playlist.js"></script>
   <script src="js/balance-data.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/state-and-stats.js"></script>
